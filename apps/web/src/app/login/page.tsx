@@ -4,7 +4,7 @@ import { productIdentity } from "@gappatch/product"
 import ky, { HTTPError } from "ky"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { MobileShell, PrimaryButton, SurfaceCard } from "../ui"
+import { LearningBadge, MascotMark, MobileShell, PrimaryButton, SurfaceCard } from "../ui"
 
 type LoginResponse = {
   readonly ok: boolean
@@ -40,38 +40,46 @@ export default function LoginPage() {
 
   return (
     <MobileShell>
-      <section className="motion-rise flex flex-1 flex-col justify-between gap-10 py-5">
-        <div className="space-y-6">
+      <section className="flex flex-1 flex-col justify-between gap-8 py-5">
+        <div className="motion-rise space-y-6">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-leaf">
               {productIdentity.englishName}
             </p>
-            <span className="rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold">
-              beta
-            </span>
+            <LearningBadge tone="banana">beta club</LearningBadge>
           </div>
-          <div className="space-y-3">
-            <h1 className="text-5xl font-semibold leading-[1.02]">{productIdentity.koreanName}</h1>
-            <p className="max-w-[18rem] text-base leading-7 text-muted">
+          <div className="grid grid-cols-[1fr_auto] items-end gap-4">
+            <div className="space-y-3">
+              <h1 className="text-5xl font-black leading-[0.98]">{productIdentity.koreanName}</h1>
+              <p className="max-w-[18rem] text-base font-semibold leading-7 text-muted">
+                {productIdentity.koreanTagline}
+              </p>
+            </div>
+            <MascotMark />
+          </div>
+          <div className="rounded-[8px] border border-leaf bg-banana p-4 shadow-[0_10px_0_rgba(41,137,112,0.15)]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-leaf">
+                  today mission
+                </p>
+                <p className="mt-2 text-2xl font-black">1문제로 빈틈 패치</p>
+              </div>
+              <span className="grid size-12 place-items-center rounded-full bg-white text-base font-black text-leaf">
+                1Q
+              </span>
+            </div>
+            <p className="mt-3 text-sm font-semibold leading-6 text-banana-ink">
               {productIdentity.koreanTagline}
             </p>
           </div>
-          <div className="grid grid-cols-[1fr_auto] items-end gap-3 rounded-[8px] border border-line bg-panel p-4 shadow-[0_18px_50px_rgba(19,30,44,0.08)]">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-coral">today</p>
-              <p className="mt-2 text-2xl font-semibold">1 question</p>
-            </div>
-            <span className="grid size-14 place-items-center rounded-[8px] bg-accent text-lg font-semibold text-white">
-              1Q
-            </span>
-          </div>
         </div>
-        <SurfaceCard>
+        <SurfaceCard tone="accent">
           <form className="space-y-4" onSubmit={submitLogin}>
             <label className="block space-y-2 text-sm font-medium">
               <span>Email</span>
               <input
-                className="w-full rounded-[8px] border border-line bg-white px-3 py-3 outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
+                className="w-full rounded-[8px] border-2 border-line bg-white px-3 py-3 font-semibold outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
                 onChange={(event) => setEmail(event.target.value)}
                 type="email"
                 value={email}
@@ -80,7 +88,7 @@ export default function LoginPage() {
             <label className="block space-y-2 text-sm font-medium">
               <span>Invite code</span>
               <input
-                className="w-full rounded-[8px] border border-line bg-white px-3 py-3 outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
+                className="w-full rounded-[8px] border-2 border-line bg-white px-3 py-3 font-semibold outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
                 onChange={(event) => setInviteCode(event.target.value)}
                 value={inviteCode}
               />
