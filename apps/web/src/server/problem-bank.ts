@@ -74,6 +74,70 @@ export const approvedProblemVersions = [
     targetProblemCount: 10,
   },
   {
+    id: "problem-networking-tcp-layer-ownership-architecture-foundation-v1",
+    rubricVersionId: "rubric-networking-tcp-layer-ownership-v1",
+    status: "approved",
+    subjectId: "computer-networking",
+    conceptId: "networking.tcp.layer-ownership",
+    conceptLabel: "TCP layer ownership",
+    scenarioFrame: "architecture-judgment",
+    scenarioLabel: "Architecture judgment",
+    difficulty: "foundation",
+    generationSource: "approved_problem_pool",
+    title: "TCP responsibility in retry architecture",
+    prompt:
+      "A team proposes adding application code that retransmits lost TCP segments. How should you respond, and where should application retry logic stop?",
+    answerGuidance:
+      "Answer in 2-5 sentences. Separate TCP segment reliability from product-level retry behavior.",
+    assignmentReason:
+      "weak-spot rotation: the same TCP ownership concept appears in a different architecture scenario instead of repeating the debugging-log prompt.",
+    rubric: [
+      {
+        id: "tcp-transport-owner",
+        description: "Identifies TCP segment retransmission as transport-layer behavior.",
+        required: true,
+      },
+      {
+        id: "application-policy-boundary",
+        description:
+          "Limits application logic to request retries, timeouts, and user-visible failure handling.",
+        required: true,
+      },
+    ],
+    targetProblemCount: 10,
+  },
+  {
+    id: "problem-networking-dns-cache-debugging-foundation-v1",
+    rubricVersionId: "rubric-networking-dns-caching-v1",
+    status: "approved",
+    subjectId: "computer-networking",
+    conceptId: "networking.dns.caching",
+    conceptLabel: "DNS caching and TTL",
+    scenarioFrame: "debugging-log",
+    scenarioLabel: "Debugging log",
+    difficulty: "foundation",
+    generationSource: "approved_problem_pool",
+    title: "DNS cache behavior during a rollout",
+    prompt:
+      "After a DNS record change, some clients still reach the old address. Explain how DNS caching and TTL can cause this rollout behavior.",
+    answerGuidance: "Answer in 2-5 sentences. Name cache lifetime and propagation behavior.",
+    assignmentReason:
+      "coverage rotation: networking practice should move across concepts, not repeat TCP ownership every day.",
+    rubric: [
+      {
+        id: "dns-cache-owner",
+        description: "Explains that resolvers or clients may cache DNS records.",
+        required: true,
+      },
+      {
+        id: "ttl-lifetime",
+        description: "Connects TTL to how long the old answer can remain visible.",
+        required: true,
+      },
+    ],
+    targetProblemCount: 10,
+  },
+  {
     id: "problem-ai-overfitting-generalization-interview-foundation-v1",
     rubricVersionId: "rubric-ai-overfitting-generalization-v1",
     status: "approved",

@@ -20,6 +20,9 @@ function gradeDeterministically(request: GradingRequest): Feedback {
   if (request.problem.conceptId === "networking.tcp.layer-ownership") {
     return gradeTcpLayerOwnership(request.input.answer)
   }
+  if (request.problem.conceptId === "networking.dns.caching") {
+    return gradeDnsCaching(request.input.answer)
+  }
   return gradeGeneralExplanation(request.input.answer)
 }
 
@@ -60,6 +63,41 @@ function gradeTcpLayerOwnership(answerText: string): Feedback {
     strengths: namesTcp ? ["Recognized TCP as part of the answer."] : [],
     summary:
       "TCP retransmission is transport-layer behavior. The application layer can own higher-level retry policy, timeouts, and user-visible failure handling.",
+  }
+}
+
+function gradeDnsCaching(answerText: string): Feedback {
+  const answer = answerText.toLowerCase()
+  const namesDns = answer.includes("dns")
+  const namesCache = answer.includes("cache") || answer.includes("caching")
+  const namesTtl = answer.includes("ttl") || answer.includes("time to live")
+
+  if (namesDns && namesCache && namesTtl) {
+    return {
+      confidence: 0.9,
+      label: "Stable",
+      missingConcepts: [],
+      misconceptions: [],
+      reviewConcepts: [],
+      score: 1,
+      strengths: ["Connected DNS caching and TTL to rollout lag."],
+      summary:
+        "Correct: DNS answers can remain cached until TTL expires, so some clients may continue using the old address during a rollout.",
+    }
+  }
+
+  return {
+    confidence: 0.82,
+    label: "Partial",
+    missingConcepts: namesTtl
+      ? ["Name where DNS answers are cached."]
+      : ["Connect TTL to how long cached DNS answers can remain visible."],
+    misconceptions: [],
+    reviewConcepts: ["networking.dns.caching"],
+    score: 0.65,
+    strengths: namesDns ? ["Recognized DNS as part of the rollout behavior."] : [],
+    summary:
+      "DNS rollout lag often comes from resolver or client caches keeping the old answer until its TTL expires.",
   }
 }
 

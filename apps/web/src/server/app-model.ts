@@ -5,7 +5,10 @@ export type PerceivedDifficulty = "easy" | "right" | "hard"
 export type GradingVerdict = "Stable" | "Partial" | "Needs review"
 export type GenerationSource = "approved_problem_pool"
 export type ScenarioFrame = "debugging-log" | "architecture-judgment" | "interview-answer"
-export type ConceptId = "networking.tcp.layer-ownership" | "ai.overfitting.generalization"
+export type ConceptId =
+  | "networking.tcp.layer-ownership"
+  | "networking.dns.caching"
+  | "ai.overfitting.generalization"
 
 export type User = {
   readonly id: string

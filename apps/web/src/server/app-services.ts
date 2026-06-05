@@ -17,10 +17,10 @@ import type {
   SubmissionResult,
   User,
 } from "./app-model"
+import { selectDailyProblem } from "./assignment-selection"
 import { deterministicGradingProvider, type GradingProvider } from "./grading"
 import { reviewItemsForUser, updateMastery } from "./mastery"
 import {
-  approvedProblemsForSubjects,
   coverageSlots,
   generationPolicy,
   problemById,
@@ -102,12 +102,7 @@ export function createDailyAssignment(
     return { kind: "ok", assignment: existing }
   }
 
-  const subjectId = user.selectedSubjects.includes("computer-networking")
-    ? "computer-networking"
-    : (user.selectedSubjects[0] ?? "computer-networking")
-  const selectedProblem =
-    approvedProblemsForSubjects([subjectId]).find((problem) => problem.subjectId === subjectId) ??
-    approvedProblemsForSubjects(user.selectedSubjects)[0]
+  const selectedProblem = selectDailyProblem(state, user)
   if (!selectedProblem) {
     return { kind: "error", code: "invalid_submission", status: 400 }
   }

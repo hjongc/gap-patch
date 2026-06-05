@@ -127,6 +127,84 @@ describe("mobile web app services", () => {
     })
   })
 
+  it("rotates weak concepts through different approved problem versions", () => {
+    const state = createAppState()
+    const login = loginWithInvite(state, {
+      email: "ai@example.com",
+      inviteCode: "BETA-AI-0001",
+      timezone: "Asia/Seoul",
+    })
+
+    if (login.kind !== "ok") {
+      throw new Error("expected beta login to succeed")
+    }
+
+    const setup = updateSubjectSelection(state, login.sessionId, {
+      subjects: ["computer-networking"],
+      difficulty: "foundation",
+    })
+    expect(setup.kind).toBe("ok")
+
+    const first = createDailyAssignment(state, login.sessionId, "2026-06-05")
+    expect(first.kind).toBe("ok")
+    if (first.kind !== "ok") {
+      throw new Error("expected first assignment creation to succeed")
+    }
+
+    const submission = submitAnswer(state, login.sessionId, {
+      assignmentId: first.assignment.id,
+      answer: "TCP retries are handled by the application layer.",
+      perceivedDifficulty: "hard",
+    })
+    expect(submission.kind).toBe("ok")
+
+    const second = createDailyAssignment(state, login.sessionId, "2026-06-06")
+    expect(second.kind).toBe("ok")
+    if (second.kind !== "ok") {
+      throw new Error("expected second assignment creation to succeed")
+    }
+
+    expect(second.assignment).toMatchObject({
+      conceptId: first.assignment.conceptId,
+      generationSource: "approved_problem_pool",
+      realtimeGenerated: false,
+    })
+    expect(second.assignment.problemVersionId).not.toBe(first.assignment.problemVersionId)
+    expect(second.assignment.scenarioFrame).not.toBe(first.assignment.scenarioFrame)
+  })
+
+  it("avoids repeating the same concept on adjacent neutral practice days", () => {
+    const state = createAppState()
+    const login = loginWithInvite(state, {
+      email: "ai@example.com",
+      inviteCode: "BETA-AI-0001",
+      timezone: "Asia/Seoul",
+    })
+
+    if (login.kind !== "ok") {
+      throw new Error("expected beta login to succeed")
+    }
+
+    const setup = updateSubjectSelection(state, login.sessionId, {
+      subjects: ["computer-networking"],
+      difficulty: "foundation",
+    })
+    expect(setup.kind).toBe("ok")
+
+    const first = createDailyAssignment(state, login.sessionId, "2026-06-05")
+    const second = createDailyAssignment(state, login.sessionId, "2026-06-06")
+
+    expect(first.kind).toBe("ok")
+    expect(second.kind).toBe("ok")
+    if (first.kind !== "ok" || second.kind !== "ok") {
+      throw new Error("expected assignment creation to succeed")
+    }
+
+    expect(second.assignment.subjectId).toBe(first.assignment.subjectId)
+    expect(second.assignment.conceptId).not.toBe(first.assignment.conceptId)
+    expect(second.assignment.problemVersionId).not.toBe(first.assignment.problemVersionId)
+  })
+
   it("computes local dates from the user's timezone", () => {
     const instant = new Date("2026-06-04T15:30:00.000Z")
 
