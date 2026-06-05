@@ -384,6 +384,45 @@ describe("mobile web app services", () => {
     expect(submission.reviewItems).toHaveLength(0)
   })
 
+  it("credits Korean transport-layer shorthand while keeping missing app policy partial", () => {
+    const state = createAppState()
+    const login = loginWithInvite(state, {
+      email: "ai@example.com",
+      inviteCode: "BETA-AI-0001",
+      timezone: "Asia/Seoul",
+    })
+
+    if (login.kind !== "ok") {
+      throw new Error("expected beta login to succeed")
+    }
+
+    const assignment = createDailyAssignment(state, login.sessionId, "2026-06-04")
+    if (assignment.kind !== "ok") {
+      throw new Error("expected assignment creation to succeed")
+    }
+
+    const submission = submitAnswer(
+      state,
+      login.sessionId,
+      {
+        assignmentId: assignment.assignment.id,
+        answer: "트랜스포트 레이어 아님?",
+      },
+      deterministicGradingProvider,
+    )
+
+    expect(submission.kind).toBe("ok")
+    if (submission.kind !== "ok") {
+      throw new Error("expected submission to succeed")
+    }
+    expect(submission.feedback.label).toBe("Partial")
+    expect(submission.feedback.score).toBeLessThan(1)
+    expect(submission.feedback.strengths).toContain("TCP 재전송을 전송 계층 동작으로 구분했습니다.")
+    expect(submission.feedback.missingConcepts).toContain(
+      "애플리케이션 계층에 남는 책임을 함께 설명해 주세요.",
+    )
+  })
+
   it("does not treat words containing app as application policy separation", () => {
     const state = createAppState()
     const login = loginWithInvite(state, {

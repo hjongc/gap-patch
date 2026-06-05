@@ -30,7 +30,12 @@ function gradeTcpLayerOwnership(answerText: string): Feedback {
   const answer = answerText.toLowerCase()
   const namesTcp = answer.includes("tcp")
   const namesTransport =
-    answer.includes("transport") || answer.includes("전송 계층") || answer.includes("전송계층")
+    answer.includes("transport") ||
+    answer.includes("전송 계층") ||
+    answer.includes("전송계층") ||
+    answer.includes("전송 레이어") ||
+    answer.includes("전송레이어") ||
+    answer.includes("트랜스포트")
   const namesApplication =
     answer.includes("application") ||
     hasWord(answer, "app") ||
@@ -88,7 +93,11 @@ function gradeTcpLayerOwnership(answerText: string): Feedback {
       : [],
     reviewConcepts: ["networking.tcp.layer-ownership"],
     score: confusesApplication ? 0.4 : 0.72,
-    strengths: namesTcp ? ["TCP를 답변의 핵심으로 잡았습니다."] : [],
+    strengths: namesTransport
+      ? ["TCP 재전송을 전송 계층 동작으로 구분했습니다."]
+      : namesTcp
+        ? ["TCP를 답변의 핵심으로 잡았습니다."]
+        : [],
     summary:
       "TCP 재전송은 전송 계층 동작입니다. 애플리케이션 계층은 더 높은 수준의 재시도 정책, 타임아웃, 사용자에게 보이는 실패 처리를 맡을 수 있습니다.",
   }
