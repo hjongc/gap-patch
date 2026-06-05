@@ -3,7 +3,6 @@ import {
   type Assignment,
   type DifficultyOptionValue,
   difficultyOptions,
-  displayFeedbackVerdict,
   type SubmissionResponse,
 } from "./today-model"
 
@@ -15,6 +14,16 @@ type SubmissionFeedbackCardProps = {
   readonly onSaveDifficulty: (perceivedDifficulty: DifficultyOptionValue) => void
 }
 
+type FeedbackResultPresentation = {
+  readonly animationLabel: string
+  readonly cardTone: "accent" | "plain" | "warm"
+  readonly headline: string
+  readonly marker: string
+  readonly motionClass: string
+  readonly statusLabel: string
+  readonly textClass: string
+}
+
 export function SubmissionFeedbackCard({
   assignment,
   difficultyError,
@@ -24,17 +33,24 @@ export function SubmissionFeedbackCard({
 }: SubmissionFeedbackCardProps) {
   const reviewConceptLabel =
     feedback.reviewConcepts.length > 0 ? assignment.conceptLabel : "복습 개념은 없습니다."
+  const result = feedbackResultPresentation(feedback.label)
 
   return (
-    <SurfaceCard tone="warm">
+    <SurfaceCard tone={result.cardTone}>
       <div className="flex items-start gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-banana text-sm font-black text-banana-ink">
-          +
+        <span
+          aria-label={result.animationLabel}
+          className={`result-motion ${result.motionClass}`}
+          role="img"
+        >
+          <span className="result-motion-core">{result.marker}</span>
+          <span className="result-motion-spark result-motion-spark-a" />
+          <span className="result-motion-spark result-motion-spark-b" />
+          <span className="result-motion-spark result-motion-spark-c" />
         </span>
-        <div>
-          <p className="text-base font-black text-coral">
-            {displayFeedbackVerdict(feedback.label)}
-          </p>
+        <div className="min-w-0">
+          <p className={`text-base font-black ${result.textClass}`}>{result.headline}</p>
+          <p className="mt-1 text-xs font-black text-muted">{result.statusLabel}</p>
           <p className="mt-2 text-sm font-semibold leading-6 text-muted">{feedback.summary}</p>
           <div className="mt-4 space-y-3 text-sm">
             {feedback.strengths.length > 0 ? (
@@ -80,4 +96,39 @@ export function SubmissionFeedbackCard({
       </div>
     </SurfaceCard>
   )
+}
+
+function feedbackResultPresentation(label: string): FeedbackResultPresentation {
+  switch (label) {
+    case "Stable":
+      return {
+        animationLabel: "정답 축하 애니메이션",
+        cardTone: "accent",
+        headline: "정답이에요",
+        marker: "+",
+        motionClass: "result-motion-stable",
+        statusLabel: "좋아요. 맞춘 부분을 먼저 확인해요.",
+        textClass: "text-leaf",
+      }
+    case "Needs review":
+      return {
+        animationLabel: "복습 안내 애니메이션",
+        cardTone: "warm",
+        headline: "다시 짚어볼게요",
+        marker: "!",
+        motionClass: "result-motion-review",
+        statusLabel: "복습 필요",
+        textClass: "text-coral",
+      }
+    default:
+      return {
+        animationLabel: "보완 안내 애니메이션",
+        cardTone: "plain",
+        headline: "거의 다 왔어요",
+        marker: "+",
+        motionClass: "result-motion-partial",
+        statusLabel: "보완 필요",
+        textClass: "text-banana-ink",
+      }
+  }
 }
