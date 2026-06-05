@@ -4,15 +4,23 @@ export type Difficulty = "foundation" | "working" | "deepening"
 export type PerceivedDifficulty = "easy" | "right" | "hard"
 export type GradingVerdict = "Stable" | "Partial" | "Needs review"
 export type GenerationSource = "approved_problem_pool"
+export type AccountRole = "admin" | "learner"
 export type ScenarioFrame = "debugging-log" | "architecture-judgment" | "interview-answer"
 export type ConceptId =
   | "networking.tcp.layer-ownership"
   | "networking.dns.caching"
   | "ai.overfitting.generalization"
 
+export type InviteCode = {
+  readonly code: string
+  readonly email?: string | undefined
+  readonly role: AccountRole
+}
+
 export type User = {
   readonly id: string
   readonly email: string
+  readonly role: AccountRole
   readonly timezone: string
   readonly selectedSubjects: readonly SubjectId[]
   readonly difficulty: Difficulty
@@ -121,7 +129,7 @@ export type GenerationPolicy = {
 }
 
 export type AppState = {
-  readonly invites: Set<string>
+  readonly invites: Map<string, InviteCode>
   readonly usersByEmail: Map<string, User>
   readonly sessionsById: Map<string, Session>
   readonly assignmentsByKey: Map<string, Assignment>

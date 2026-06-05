@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
   createAppState,
@@ -11,6 +11,10 @@ import {
 } from "../test-support/app-service-imports"
 
 describe("mobile web app services", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it("logs in with a beta invite and stores subject selections", () => {
     const state = createAppState()
 
@@ -46,6 +50,42 @@ describe("mobile web app services", () => {
     })
 
     expect(login).toEqual({ kind: "error", code: "invalid_invite", status: 401 })
+  })
+
+  it("seeds master and test invite accounts from production env", () => {
+    vi.stubEnv("GAPPATCH_MASTER_EMAIL", "master@gappatch.app")
+    vi.stubEnv("GAPPATCH_MASTER_INVITE_CODE", "MASTER-PATCH-0001")
+    vi.stubEnv("GAPPATCH_TEST_EMAIL", "test@gappatch.app")
+    vi.stubEnv("GAPPATCH_TEST_INVITE_CODE", "TEST-PATCH-0001")
+    const state = createAppState()
+
+    const master = loginWithInvite(state, {
+      email: "master@gappatch.app",
+      inviteCode: "MASTER-PATCH-0001",
+      timezone: "Asia/Seoul",
+    })
+    const scopedMismatch = loginWithInvite(state, {
+      email: "test@gappatch.app",
+      inviteCode: "MASTER-PATCH-0001",
+      timezone: "Asia/Seoul",
+    })
+    const learner = loginWithInvite(state, {
+      email: "test@gappatch.app",
+      inviteCode: "TEST-PATCH-0001",
+      timezone: "Asia/Seoul",
+    })
+
+    expect(master.kind).toBe("ok")
+    if (master.kind !== "ok") {
+      throw new Error("expected master login to succeed")
+    }
+    expect(master.user.role).toBe("admin")
+    expect(scopedMismatch).toEqual({ kind: "error", code: "invalid_invite", status: 401 })
+    expect(learner.kind).toBe("ok")
+    if (learner.kind !== "ok") {
+      throw new Error("expected test learner login to succeed")
+    }
+    expect(learner.user.role).toBe("learner")
   })
 
   it("uses opaque session ids and rejects forged predictable sessions", () => {

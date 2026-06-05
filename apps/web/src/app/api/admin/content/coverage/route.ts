@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { isAdminEmail } from "../../../../../server/admin-access"
+import { isAdminUser } from "../../../../../server/admin-access"
 import { getAdminContentCoverage } from "../../../../../server/app-services"
 import { jsonError, readSessionId } from "../../../../../server/http"
 import { userForSession } from "../../../../../server/session-state"
@@ -14,7 +14,7 @@ export async function GET() {
 
   const state = await getAppState()
   const user = userForSession(state, sessionId)
-  if (!user || !isAdminEmail(user.email)) {
+  if (!user || !isAdminUser(user)) {
     return jsonError("unauthorized", 401)
   }
 

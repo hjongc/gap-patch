@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises"
+import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
@@ -50,6 +50,57 @@ describe("file-backed app state", () => {
         throw new Error("expected persisted history to load")
       }
       expect(history.history[0]?.assignmentId).toBe(assignment.assignment.id)
+    } finally {
+      await rm(directory, { force: true, recursive: true })
+    }
+  })
+
+  it("migrates legacy invite strings and users to learner roles", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "gappatch-state-"))
+    const stateFile = join(directory, "state.json")
+
+    try {
+      await writeFile(
+        stateFile,
+        `${JSON.stringify(
+          {
+            assignments: [],
+            history: [],
+            invites: ["LEGACY-BETA"],
+            review: [],
+            sessions: [],
+            users: [
+              {
+                difficulty: "foundation",
+                email: "legacy@gappatch.app",
+                id: "user-legacy",
+                selectedSubjects: ["computer-networking"],
+                timezone: "Asia/Seoul",
+              },
+            ],
+          },
+          null,
+          2,
+        )}\n`,
+      )
+
+      const restarted = await loadAppStateFromFile(stateFile)
+      const login = loginWithInvite(restarted, {
+        email: "new@gappatch.app",
+        inviteCode: "LEGACY-BETA",
+        timezone: "Asia/Seoul",
+      })
+
+      expect(restarted.invites.get("LEGACY-BETA")).toEqual({
+        code: "LEGACY-BETA",
+        role: "learner",
+      })
+      expect(restarted.usersByEmail.get("legacy@gappatch.app")?.role).toBe("learner")
+      expect(login.kind).toBe("ok")
+      if (login.kind !== "ok") {
+        throw new Error("expected migrated invite to work")
+      }
+      expect(login.user.role).toBe("learner")
     } finally {
       await rm(directory, { force: true, recursive: true })
     }

@@ -26,13 +26,14 @@ import {
   problemById,
   problemVersionSummaries,
 } from "./problem-bank"
+import { inviteMatchesEmail, seedInvites } from "./seed-invites"
 import { assignmentForUser, createSessionId, userForSession } from "./session-state"
 
 const sessionTtlMs = 1000 * 60 * 60 * 24 * 30
 
 export function createAppState(): AppState {
   return {
-    invites: new Set(["BETA-AI-0001"]),
+    invites: seedInvites(),
     usersByEmail: new Map(),
     sessionsById: new Map(),
     assignmentsByKey: new Map(),
@@ -43,7 +44,8 @@ export function createAppState(): AppState {
 }
 
 export function loginWithInvite(state: AppState, input: LoginInput): LoginResult {
-  if (!state.invites.has(input.inviteCode)) {
+  const invite = state.invites.get(input.inviteCode)
+  if (!invite || !inviteMatchesEmail(invite, input.email)) {
     return { kind: "error", code: "invalid_invite", status: 401 }
   }
 
@@ -53,6 +55,7 @@ export function loginWithInvite(state: AppState, input: LoginInput): LoginResult
     ({
       id: `user-${state.usersByEmail.size + 1}`,
       email: input.email,
+      role: invite.role,
       timezone: input.timezone,
       selectedSubjects: subjectIds,
       difficulty: "foundation",

@@ -1,9 +1,11 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import type {
+  AccountRole,
   AppState,
   Assignment,
   HistoryItem,
+  InviteCode,
   ReviewItem,
   Session,
   User,
@@ -17,9 +19,14 @@ const globalForGapPatch = globalThis as typeof globalThis & {
   __gappatchStateFile?: string
 }
 
+type PersistedInviteCode = string | InviteCode
+type PersistedUser = Omit<User, "role"> & {
+  readonly role?: AccountRole | undefined
+}
+
 type PersistedAppState = {
-  readonly invites: readonly string[]
-  readonly users: readonly User[]
+  readonly invites: readonly PersistedInviteCode[]
+  readonly users: readonly PersistedUser[]
   readonly sessions: readonly Session[]
   readonly assignments: readonly Assignment[]
   readonly history: readonly (readonly [string, readonly HistoryItem[]])[]
@@ -63,7 +70,7 @@ export async function saveAppStateToFile(state: AppState, filePath: string): Pro
 
 export function serializeAppState(state: AppState): PersistedAppState {
   return {
-    invites: [...state.invites],
+    invites: [...state.invites.values()],
     users: [...state.usersByEmail.values()],
     sessions: [...state.sessionsById.values()],
     assignments: [...state.assignmentsByKey.values()],
@@ -75,12 +82,13 @@ export function serializeAppState(state: AppState): PersistedAppState {
 
 export function hydrateAppState(persisted: PersistedAppState): AppState {
   const state = createAppState()
-  state.invites.clear()
   for (const invite of persisted.invites) {
-    state.invites.add(invite)
+    const normalized = normalizeInvite(invite)
+    state.invites.set(normalized.code, normalized)
   }
   for (const user of persisted.users) {
-    state.usersByEmail.set(user.email, user)
+    const normalized = normalizeUser(user)
+    state.usersByEmail.set(normalized.email, normalized)
   }
   for (const session of persisted.sessions) {
     state.sessionsById.set(session.id, session)
@@ -99,6 +107,23 @@ export function hydrateAppState(persisted: PersistedAppState): AppState {
     state.masteryByUserConceptKey.set(`${mastery.userId}:${mastery.conceptId}`, mastery)
   }
   return state
+}
+
+function normalizeInvite(invite: PersistedInviteCode): InviteCode {
+  if (typeof invite === "string") {
+    return {
+      code: invite,
+      role: "learner",
+    }
+  }
+  return invite
+}
+
+function normalizeUser(user: PersistedUser): User {
+  return {
+    ...user,
+    role: user.role ?? "learner",
+  }
 }
 
 function normalizeAssignment(assignment: Assignment): Assignment {
