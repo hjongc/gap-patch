@@ -31,6 +31,10 @@ type Env = Readonly<{
   readonly AZURE_OPENAI_GRADING_DEPLOYMENT?: string | undefined
   readonly AZURE_OPENAI_GRADING_TIMEOUT_MS?: string | undefined
   readonly GAPPATCH_GRADING_PROVIDER?: string | undefined
+  readonly LLM_API_ENDPOINT?: string | undefined
+  readonly LLM_API_KEY?: string | undefined
+  readonly LLM_API_VERSION?: string | undefined
+  readonly LLM_MODEL?: string | undefined
 }>
 
 type AzureChatMessage = {
@@ -50,7 +54,6 @@ type AzureChatCompletionRequest = {
       readonly schema: typeof gradingFeedbackJsonSchema
     }
   }
-  readonly temperature: 0
 }
 
 export class AzureOpenAiGradingError extends Error {
@@ -109,20 +112,22 @@ export function resolveAzureOpenAiGradingConfig(env: Env): AzureOpenAiGradingCon
     return null
   }
 
-  const apiKey = trimmed(env.AZURE_OPENAI_API_KEY)
-  const deployment = trimmed(env.AZURE_OPENAI_GRADING_DEPLOYMENT ?? env.AZURE_OPENAI_DEPLOYMENT)
-  const endpoint = trimmed(env.AZURE_OPENAI_ENDPOINT)
+  const apiKey = trimmed(env.AZURE_OPENAI_API_KEY ?? env.LLM_API_KEY)
+  const deployment = trimmed(
+    env.AZURE_OPENAI_GRADING_DEPLOYMENT ?? env.AZURE_OPENAI_DEPLOYMENT ?? env.LLM_MODEL,
+  )
+  const endpoint = trimmed(env.AZURE_OPENAI_ENDPOINT ?? env.LLM_API_ENDPOINT)
   if (!apiKey || !deployment || !endpoint) {
     throw new AzureOpenAiGradingError(
       "incomplete_config",
-      "Azure OpenAI grading requires AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, and AZURE_OPENAI_GRADING_DEPLOYMENT.",
+      "Azure OpenAI grading requires endpoint, API key, and deployment/model env values.",
     )
   }
 
   return {
     apiKey,
     deployment,
-    endpoint: endpoint.replace(/\/+$/, ""),
+    endpoint: normalizeAzureEndpoint(endpoint),
     timeoutMs: parseTimeoutMs(env.AZURE_OPENAI_GRADING_TIMEOUT_MS),
   }
 }
@@ -173,7 +178,6 @@ function buildAzureOpenAiRequest(
         },
         type: "json_schema",
       },
-      temperature: 0,
     },
     headers: {
       "Content-Type": "application/json",
@@ -252,6 +256,12 @@ function trimmed(value: string | undefined): string | null {
   return normalized && normalized.length > 0 ? normalized : null
 }
 
+function normalizeAzureEndpoint(value: string): string {
+  const [withoutQuery] = value.split("?")
+  const withoutOpenAiPath = withoutQuery?.split("/openai/")[0] ?? value
+  return withoutOpenAiPath.replace(/\/+$/, "")
+}
+
 function currentEnv(): Env {
   return {
     AZURE_OPENAI_API_KEY: processEnvValue("AZURE_OPENAI_API_KEY"),
@@ -260,6 +270,10 @@ function currentEnv(): Env {
     AZURE_OPENAI_GRADING_DEPLOYMENT: processEnvValue("AZURE_OPENAI_GRADING_DEPLOYMENT"),
     AZURE_OPENAI_GRADING_TIMEOUT_MS: processEnvValue("AZURE_OPENAI_GRADING_TIMEOUT_MS"),
     GAPPATCH_GRADING_PROVIDER: processEnvValue("GAPPATCH_GRADING_PROVIDER"),
+    LLM_API_ENDPOINT: processEnvValue("LLM_API_ENDPOINT"),
+    LLM_API_KEY: processEnvValue("LLM_API_KEY"),
+    LLM_API_VERSION: processEnvValue("LLM_API_VERSION"),
+    LLM_MODEL: processEnvValue("LLM_MODEL"),
   }
 }
 

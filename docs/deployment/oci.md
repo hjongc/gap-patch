@@ -65,7 +65,8 @@ Cookie policy:
 - Use `GAPPATCH_SECURE_COOKIES=false` only for an IP-only HTTP deployment.
 - Remove it or set `GAPPATCH_SECURE_COOKIES=true` after a HTTPS domain is attached.
 - Keep `GAPPATCH_GRADING_PROVIDER=deterministic` until the Azure OpenAI endpoint, key, and deployment name are present.
-- Use `GAPPATCH_GRADING_PROVIDER=azure-openai` with `AZURE_OPENAI_GRADING_DEPLOYMENT` set to the Azure deployment name, not just the public model slug.
+- Use `GAPPATCH_GRADING_PROVIDER=azure-openai` with `AZURE_OPENAI_GRADING_DEPLOYMENT` set to the Azure deployment name, not just the public model slug. The current low-latency grading default is `gpt-4o-mini`.
+- Legacy aliases `LLM_API_ENDPOINT`, `LLM_API_KEY`, `LLM_MODEL`, and `LLM_API_VERSION` are accepted. `LLM_API_VERSION` is ignored on the Azure v1 API path and exists only for compatibility with older `.env` files.
 - Store Azure OpenAI keys in the server `.env` or a secret manager. Do not commit them.
 
 The legacy local invite `BETA-AI-0001` is disabled by default when `NODE_ENV=production`.

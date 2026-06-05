@@ -115,4 +115,22 @@ describe("Azure OpenAI grading provider", () => {
       }),
     ).toThrow(AzureOpenAiGradingError)
   })
+
+  it("accepts legacy LLM env names while using the Azure v1 API path", () => {
+    const config = resolveAzureOpenAiGradingConfig({
+      GAPPATCH_GRADING_PROVIDER: "azure-openai",
+      LLM_API_ENDPOINT:
+        "https://gap-patch.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-10-21",
+      LLM_API_KEY: "legacy-key",
+      LLM_API_VERSION: "2024-10-21",
+      LLM_MODEL: "gpt-4o",
+    })
+
+    expect(config).toEqual({
+      apiKey: "legacy-key",
+      deployment: "gpt-4o",
+      endpoint: "https://gap-patch.openai.azure.com",
+      timeoutMs: 8000,
+    })
+  })
 })
