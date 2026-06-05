@@ -3,6 +3,7 @@ export {
   createDailyAssignment,
   getAdminContentCoverage,
   getHistory,
+  getReview,
   localDateForTimezone,
   loginWithInvite,
   submitAnswer,

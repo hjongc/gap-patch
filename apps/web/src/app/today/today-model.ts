@@ -53,3 +53,14 @@ export const difficultyOptions = [
 ] as const
 
 export type DifficultyOptionValue = (typeof difficultyOptions)[number]["value"]
+
+export const feedbackVerdictLabels: Record<SubmissionResponse["feedback"]["label"], string> = {
+  Partial: "보완 필요",
+  Stable: "안정적",
+  "Needs review": "복습 필요",
+}
+
+export function displayFeedbackVerdict(label: string): string {
+  const verdict = feedbackVerdictLabels[label as keyof typeof feedbackVerdictLabels]
+  return verdict ?? label
+}

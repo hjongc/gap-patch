@@ -181,6 +181,10 @@ export function problemById(problemVersionId: string): ApprovedProblemVersion | 
   return approvedProblemVersions.find((problem) => problem.id === problemVersionId) ?? null
 }
 
+export function problemByConceptId(conceptId: ConceptId): ApprovedProblemVersion | null {
+  return approvedProblemVersions.find((problem) => problem.conceptId === conceptId) ?? null
+}
+
 export function applyProblemVersionToAssignment(
   assignment: Assignment,
   problem: ApprovedProblemVersion,

@@ -3,6 +3,7 @@
 import ky from "ky"
 import { useEffect, useState } from "react"
 import { LearnerNav } from "../nav"
+import { displayFeedbackVerdict } from "../today/today-model"
 import { LearningBadge, MobileShell, PageHeader, SurfaceCard } from "../ui"
 
 type HistoryItem = {
@@ -59,7 +60,9 @@ export default function HistoryPage() {
                     <dd className="mt-1">{item.scenarioLabel}</dd>
                   </div>
                 </dl>
-                <p className="mt-3 text-sm font-black text-coral">{item.feedback.label}</p>
+                <p className="mt-3 text-sm font-black text-coral">
+                  {displayFeedbackVerdict(item.feedback.label)}
+                </p>
               </div>
             </div>
           </SurfaceCard>

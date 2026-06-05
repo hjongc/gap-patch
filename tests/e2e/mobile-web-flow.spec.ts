@@ -33,9 +33,9 @@ test("mobile learner completes production personalized grading loop", async ({ p
   await page.getByRole("button", { name: "과목 저장" }).click()
 
   await expect(page.getByRole("heading", { name: "오늘의 문제" })).toBeVisible()
-  await expect(page.getByText("검수 완료")).toBeVisible()
-  await expect(page.getByText("기초", { exact: true })).toBeVisible()
-  await expect(page.getByText("개념: TCP 계층 책임", { exact: true })).toBeVisible()
+  await expect(page.getByText("검수 완료", { exact: true })).toHaveCount(0)
+  await expect(page.getByText("기초", { exact: true })).toHaveCount(0)
+  await expect(page.getByText("개념: TCP 계층 책임", { exact: true })).toHaveCount(0)
   await expect(page.getByText("foundation", { exact: true })).toHaveCount(0)
   await expect(
     page.getByRole("heading", { name: "TCP 재전송은 어느 계층의 책임일까?" }),
@@ -54,7 +54,9 @@ test("mobile learner completes production personalized grading loop", async ({ p
   await expect(page.getByText("답안을 채점하고 있어요")).toBeVisible()
   submissionGate.open()
 
-  await expect(page.getByText(/Partial|Needs review/)).toBeVisible()
+  await expect(page.getByText("복습 필요", { exact: true })).toBeVisible()
+  await expect(page.getByText("Needs review", { exact: true })).toHaveCount(0)
+  await expect(page.getByText("networking.tcp.layer-ownership", { exact: true })).toHaveCount(0)
   await expect(page.getByText("빠진 개념")).toBeVisible()
   await expect(page.getByText("복습 개념")).toBeVisible()
   await expect(page.getByRole("button", { name: "어려움" })).toBeVisible()
@@ -63,8 +65,10 @@ test("mobile learner completes production personalized grading loop", async ({ p
   await page.getByRole("link", { name: "기록" }).click()
   await expect(page.getByText("TCP 계층 책임", { exact: true }).first()).toBeVisible()
   await expect(page.getByText("채점 기준", { exact: true })).toBeVisible()
+  await expect(page.getByText("Needs review", { exact: true })).toHaveCount(0)
   await page.getByRole("link", { name: "복습" }).click()
   await expect(page.getByText("TCP 계층 책임", { exact: true }).first()).toBeVisible()
+  await expect(page.getByText("복습 필요", { exact: true })).toBeVisible()
   await expect(page.getByText("다음 복습", { exact: true })).toBeVisible()
 })
 

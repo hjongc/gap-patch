@@ -384,6 +384,41 @@ describe("mobile web app services", () => {
     expect(submission.reviewItems).toHaveLength(0)
   })
 
+  it("does not treat words containing app as application policy separation", () => {
+    const state = createAppState()
+    const login = loginWithInvite(state, {
+      email: "ai@example.com",
+      inviteCode: "BETA-AI-0001",
+      timezone: "Asia/Seoul",
+    })
+
+    if (login.kind !== "ok") {
+      throw new Error("expected beta login to succeed")
+    }
+
+    const assignment = createDailyAssignment(state, login.sessionId, "2026-06-04")
+    if (assignment.kind !== "ok") {
+      throw new Error("expected assignment creation to succeed")
+    }
+
+    const submission = submitAnswer(
+      state,
+      login.sessionId,
+      {
+        assignmentId: assignment.assignment.id,
+        answer: "TCP retransmission happens in the transport layer.",
+      },
+      deterministicGradingProvider,
+    )
+
+    expect(submission.kind).toBe("ok")
+    if (submission.kind !== "ok") {
+      throw new Error("expected submission to succeed")
+    }
+    expect(submission.feedback.label).toBe("Partial")
+    expect(submission.feedback.score).toBeLessThan(1)
+  })
+
   it("schedules review from the submission clock instead of a fixed fixture date", () => {
     const state = createAppState()
     const login = loginWithInvite(state, {

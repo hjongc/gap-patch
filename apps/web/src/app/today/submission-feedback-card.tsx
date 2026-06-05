@@ -3,6 +3,7 @@ import {
   type Assignment,
   type DifficultyOptionValue,
   difficultyOptions,
+  displayFeedbackVerdict,
   type SubmissionResponse,
 } from "./today-model"
 
@@ -21,6 +22,9 @@ export function SubmissionFeedbackCard({
   feedback,
   onSaveDifficulty,
 }: SubmissionFeedbackCardProps) {
+  const reviewConceptLabel =
+    feedback.reviewConcepts.length > 0 ? assignment.conceptLabel : "복습 개념은 없습니다."
+
   return (
     <SurfaceCard tone="warm">
       <div className="flex items-start gap-3">
@@ -28,7 +32,9 @@ export function SubmissionFeedbackCard({
           +
         </span>
         <div>
-          <p className="text-base font-black text-coral">{feedback.label}</p>
+          <p className="text-base font-black text-coral">
+            {displayFeedbackVerdict(feedback.label)}
+          </p>
           <p className="mt-2 text-sm font-semibold leading-6 text-muted">{feedback.summary}</p>
           <div className="mt-4 space-y-3 text-sm">
             <div>
@@ -39,9 +45,7 @@ export function SubmissionFeedbackCard({
             </div>
             <div>
               <p className="font-black">복습 개념</p>
-              <p className="mt-1 font-semibold leading-6 text-muted">
-                {feedback.reviewConcepts[0] ?? assignment.conceptLabel}
-              </p>
+              <p className="mt-1 font-semibold leading-6 text-muted">{reviewConceptLabel}</p>
             </div>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-2">

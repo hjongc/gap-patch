@@ -33,7 +33,8 @@ function gradeTcpLayerOwnership(answerText: string): Feedback {
     answer.includes("transport") || answer.includes("전송 계층") || answer.includes("전송계층")
   const namesApplication =
     answer.includes("application") ||
-    answer.includes("app") ||
+    hasWord(answer, "app") ||
+    hasWord(answer, "apps") ||
     answer.includes("애플리케이션") ||
     answer.includes("앱")
   const namesPolicy =
@@ -155,4 +156,8 @@ function gradeGeneralExplanation(answerText: string): Feedback {
     summary:
       "과적합은 학습 지표는 좋아지지만 검증 지표가 따라오지 않을 때 의심할 수 있습니다. 정규화, 데이터 추가, 드롭아웃, 더 단순한 모델 같은 완화책을 함께 떠올려 보세요.",
   }
+}
+
+function hasWord(text: string, word: string): boolean {
+  return new RegExp(`\\b${word}\\b`, "u").test(text)
 }

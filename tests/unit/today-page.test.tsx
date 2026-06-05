@@ -28,11 +28,11 @@ const kyMocks = vi.hoisted(() => ({
     json: async () => ({
       feedback: {
         label: "Partial",
-        missingConcepts: ["Name one mitigation."],
+        missingConcepts: ["완화 방법을 하나 제시해 주세요."],
         misconceptions: [],
         reviewConcepts: ["ai.overfitting.generalization"],
         strengths: [],
-        summary: "Tighten the answer.",
+        summary: "조금 더 보완해 주세요.",
       },
       ok: true,
     }),
@@ -63,12 +63,13 @@ describe("TodayPage", () => {
     expect(screen.queryByText("network")).not.toBeInTheDocument()
   })
 
-  it("renders production copy as Korean chips instead of raw internal labels", async () => {
+  it("does not render internal assignment metadata chips", async () => {
     render(<TodayPage />)
 
-    expect(await screen.findByText("검수 완료")).toBeVisible()
-    expect(screen.getAllByText("기초")[0]).toBeVisible()
-    expect(screen.getByText("개념: 과적합과 일반화")).toBeVisible()
+    expect(await screen.findByText("모델 리뷰에서 보이는 과적합 신호")).toBeVisible()
+    expect(screen.queryByText("검수 완료")).not.toBeInTheDocument()
+    expect(screen.queryByText("기초")).not.toBeInTheDocument()
+    expect(screen.queryByText("개념: 과적합과 일반화")).not.toBeInTheDocument()
     expect(screen.queryByText("foundation")).not.toBeInTheDocument()
   })
 
@@ -82,11 +83,11 @@ describe("TodayPage", () => {
             resolve({
               feedback: {
                 label: "Partial",
-                missingConcepts: ["Name one mitigation."],
+                missingConcepts: ["완화 방법을 하나 제시해 주세요."],
                 misconceptions: [],
                 reviewConcepts: ["ai.overfitting.generalization"],
                 strengths: [],
-                summary: "Tighten the answer.",
+                summary: "조금 더 보완해 주세요.",
               },
               ok: true,
             })
@@ -111,7 +112,10 @@ describe("TodayPage", () => {
     await act(async () => {
       releaseSubmission?.()
     })
-    expect(await screen.findByText("Tighten the answer.")).toBeVisible()
+    expect(await screen.findByText("보완 필요")).toBeVisible()
+    expect(screen.getByText("조금 더 보완해 주세요.")).toBeVisible()
+    expect(screen.queryByText("Partial")).not.toBeInTheDocument()
+    expect(screen.queryByText("ai.overfitting.generalization")).not.toBeInTheDocument()
   })
 
   it("renders a credible loading state before the assignment arrives", () => {

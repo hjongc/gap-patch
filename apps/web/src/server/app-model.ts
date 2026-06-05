@@ -229,9 +229,9 @@ export type AdminContentCoverageResult = {
 }
 
 export const subjectLabels: Record<SubjectId, string> = {
-  "ai-ml-foundations": "AI/ML Foundations",
-  "operating-systems": "Operating Systems",
-  "computer-networking": "Computer Networking",
-  "data-math-statistics": "Data, Math, Statistics",
-  "software-engineering-systems": "Software Engineering Systems",
+  "ai-ml-foundations": "AI/ML",
+  "operating-systems": "운영체제",
+  "computer-networking": "네트워크",
+  "data-math-statistics": "데이터/수학",
+  "software-engineering-systems": "시스템 설계",
 }

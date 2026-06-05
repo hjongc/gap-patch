@@ -11,10 +11,12 @@ import type {
   User,
   UserConceptMastery,
 } from "./app-model"
+import { subjectLabels } from "./app-model"
 import { createAppState } from "./app-services"
 import {
   applyProblemVersionToAssignment,
   approvedProblemsForSubjects,
+  problemByConceptId,
   problemById,
 } from "./problem-bank"
 import { shouldKeepPersistedInvite } from "./seed-invites"
@@ -105,13 +107,14 @@ export function hydrateAppState(persisted: PersistedAppState): AppState {
     state.assignmentsByKey.set(`${normalized.userId}:${normalized.localDate}`, normalized)
   }
   for (const [userId, history] of persisted.history) {
-    state.historyByUserId.set(userId, history)
+    state.historyByUserId.set(userId, history.map(normalizeHistoryItem))
   }
   for (const [userId, review] of persisted.review) {
-    state.reviewByUserId.set(userId, review)
+    state.reviewByUserId.set(userId, review.map(normalizeReviewItem))
   }
   for (const mastery of persisted.mastery ?? []) {
-    state.masteryByUserConceptKey.set(`${mastery.userId}:${mastery.conceptId}`, mastery)
+    const normalized = normalizeMastery(mastery)
+    state.masteryByUserConceptKey.set(`${normalized.userId}:${normalized.conceptId}`, normalized)
   }
   return state
 }
@@ -142,6 +145,62 @@ function normalizeAssignment(assignment: Assignment): Assignment {
     return assignment
   }
   return applyProblemVersionToAssignment(assignment, fallbackProblem)
+}
+
+function normalizeHistoryItem(historyItem: HistoryItem): HistoryItem {
+  const problem = problemById(historyItem.problemVersionId)
+  if (!problem) {
+    return historyItem
+  }
+
+  return {
+    ...historyItem,
+    conceptId: problem.conceptId,
+    conceptLabel: problem.conceptLabel,
+    rubricVersionId: problem.rubricVersionId,
+    scenarioLabel: problem.scenarioLabel,
+    subjectId: problem.subjectId,
+    title: problem.title,
+  }
+}
+
+function normalizeReviewItem(reviewItem: ReviewItem): ReviewItem {
+  const problem = problemByConceptId(reviewItem.conceptId)
+  if (!problem) {
+    return reviewItem
+  }
+
+  return {
+    ...reviewItem,
+    conceptLabel: problem.conceptLabel,
+    lastScenarioLabel: problem.scenarioLabel,
+    reason: normalizeReviewReason(reviewItem.reason, problem.conceptId),
+    subjectId: problem.subjectId,
+    subjectLabel: subjectLabels[problem.subjectId],
+  }
+}
+
+function normalizeMastery(mastery: UserConceptMastery): UserConceptMastery {
+  const problem = problemByConceptId(mastery.conceptId)
+  return problem ? { ...mastery, conceptLabel: problem.conceptLabel } : mastery
+}
+
+function normalizeReviewReason(reason: string, conceptId: Assignment["conceptId"]): string {
+  const normalized = reason.toLowerCase()
+  if (
+    conceptId === "networking.tcp.layer-ownership" &&
+    (normalized.includes("application layer") ||
+      normalized.includes("tcp retransmission") ||
+      normalized.includes("review this concept"))
+  ) {
+    return "TCP 재전송과 애플리케이션 재시도 정책을 다시 구분해 보세요."
+  }
+
+  if (normalized.includes("review this concept")) {
+    return "다른 상황으로 이 개념을 다시 확인해 보세요."
+  }
+
+  return reason
 }
 
 function appStateFilePath(): string {

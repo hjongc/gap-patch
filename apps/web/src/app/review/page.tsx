@@ -3,6 +3,7 @@
 import ky from "ky"
 import { useEffect, useState } from "react"
 import { LearnerNav } from "../nav"
+import { displayFeedbackVerdict } from "../today/today-model"
 import { LearningBadge, MobileShell, PageHeader, ProgressRail, SurfaceCard } from "../ui"
 
 type ReviewItem = {
@@ -42,7 +43,7 @@ export default function ReviewPage() {
       {reviewItems.length > 0 ? (
         reviewItems.map((item) => (
           <SurfaceCard key={item.conceptLabel} tone="warm">
-            <p className="text-sm font-black text-coral">{item.label}</p>
+            <p className="text-sm font-black text-coral">{displayFeedbackVerdict(item.label)}</p>
             <h2 className="mt-2 text-xl font-black">{item.conceptLabel}</h2>
             <p className="mt-2 text-xs font-black uppercase text-muted">{item.subjectLabel}</p>
             <p className="mt-3 text-sm font-semibold leading-6 text-muted">{item.reason}</p>
