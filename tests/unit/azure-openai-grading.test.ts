@@ -72,6 +72,21 @@ describe("Azure OpenAI grading provider", () => {
       headers: { "api-key": "azure-key" },
       url: "https://gap-patch.openai.azure.com/openai/v1/chat/completions",
     })
+    const [request] = seenRequests
+    expect(request).toMatchObject({
+      body: {
+        messages: [
+          {
+            content: expect.stringContaining("translated or transliterated equivalents"),
+            role: "system",
+          },
+          {
+            content: expect.stringContaining("rubric"),
+            role: "user",
+          },
+        ],
+      },
+    })
   })
 
   it("falls back to deterministic grading unless Azure OpenAI is fully configured", async () => {

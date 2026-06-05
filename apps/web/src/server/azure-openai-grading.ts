@@ -153,8 +153,13 @@ function buildAzureOpenAiRequest(
       max_completion_tokens: 700,
       messages: [
         {
-          content:
-            "You grade short Korean or English CS practice answers. Return only structured JSON. Reward correct concept ownership, penalize misconceptions, and keep feedback concise.",
+          content: [
+            "You grade short Korean or English CS practice answers against the provided prompt, answer guidance, and rubric.",
+            "Grade semantic meaning, not exact wording: translated or transliterated equivalents of technical terms should count when they satisfy a rubric criterion.",
+            "Return strengths for satisfied required rubric criteria, missingConcepts for unsatisfied required criteria, and misconceptions only for actually incorrect claims.",
+            "A terse answer can be Partial when it names one correct concept but omits another required responsibility.",
+            "Return only structured JSON and keep learner-facing Korean feedback concise.",
+          ].join(" "),
           role: "system",
         },
         {

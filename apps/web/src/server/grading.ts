@@ -30,12 +30,7 @@ function gradeTcpLayerOwnership(answerText: string): Feedback {
   const answer = answerText.toLowerCase()
   const namesTcp = answer.includes("tcp")
   const namesTransport =
-    answer.includes("transport") ||
-    answer.includes("전송 계층") ||
-    answer.includes("전송계층") ||
-    answer.includes("전송 레이어") ||
-    answer.includes("전송레이어") ||
-    answer.includes("트랜스포트")
+    answer.includes("transport") || answer.includes("전송 계층") || answer.includes("전송계층")
   const namesApplication =
     answer.includes("application") ||
     hasWord(answer, "app") ||
