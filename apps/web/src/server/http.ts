@@ -11,14 +11,24 @@ export async function readSessionId(): Promise<string | null> {
 
 export async function writeSessionId(sessionId: string): Promise<void> {
   const cookieStore = await cookies()
-  const env = process.env as { readonly NODE_ENV?: string }
   cookieStore.set(sessionCookieName, sessionId, {
     httpOnly: true,
     maxAge: 60 * 60 * 24 * 30,
     sameSite: "lax",
-    secure: env.NODE_ENV === "production",
+    secure: shouldUseSecureSessionCookies(),
     path: "/",
   })
+}
+
+export function shouldUseSecureSessionCookies(): boolean {
+  const { GAPPATCH_SECURE_COOKIES, NODE_ENV } = process.env
+  if (GAPPATCH_SECURE_COOKIES === "false") {
+    return false
+  }
+  if (GAPPATCH_SECURE_COOKIES === "true") {
+    return true
+  }
+  return NODE_ENV === "production"
 }
 
 export function jsonError(code: string, status: 400 | 401): NextResponse {
