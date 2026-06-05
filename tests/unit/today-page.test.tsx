@@ -31,7 +31,7 @@ const kyMocks = vi.hoisted(() => ({
         missingConcepts: ["완화 방법을 하나 제시해 주세요."],
         misconceptions: [],
         reviewConcepts: ["ai.overfitting.generalization"],
-        strengths: [],
+        strengths: ["학습/검증 성능 차이를 일반화 위험과 연결했습니다."],
         summary: "조금 더 보완해 주세요.",
       },
       ok: true,
@@ -116,6 +116,35 @@ describe("TodayPage", () => {
     expect(screen.getByText("조금 더 보완해 주세요.")).toBeVisible()
     expect(screen.queryByText("Partial")).not.toBeInTheDocument()
     expect(screen.queryByText("ai.overfitting.generalization")).not.toBeInTheDocument()
+  })
+
+  it("shows strengths and missing concepts after grading", async () => {
+    kyMocks.post.mockImplementationOnce(() => ({
+      json: async () => ({
+        feedback: {
+          label: "Partial",
+          missingConcepts: ["애플리케이션 계층에 남는 책임을 함께 설명해 주세요."],
+          misconceptions: [],
+          reviewConcepts: ["networking.tcp.layer-ownership"],
+          strengths: ["TCP 재전송을 전송 계층 동작으로 구분했습니다."],
+          summary: "TCP 재전송은 전송 계층 동작입니다.",
+        },
+        ok: true,
+      }),
+    }))
+
+    render(<TodayPage />)
+    await screen.findByText("AI/ML")
+
+    fireEvent.change(screen.getByLabelText(/내 답안/), {
+      target: { value: "트랜스포트 레이어 아님?" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: "답안 제출" }))
+
+    expect(await screen.findByText("잘한 부분")).toBeVisible()
+    expect(screen.getByText("TCP 재전송을 전송 계층 동작으로 구분했습니다.")).toBeVisible()
+    expect(screen.getByText("빠진 개념")).toBeVisible()
+    expect(screen.getByText("애플리케이션 계층에 남는 책임을 함께 설명해 주세요.")).toBeVisible()
   })
 
   it("renders a credible loading state before the assignment arrives", () => {

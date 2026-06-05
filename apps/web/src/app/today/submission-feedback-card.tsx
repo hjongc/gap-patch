@@ -37,6 +37,16 @@ export function SubmissionFeedbackCard({
           </p>
           <p className="mt-2 text-sm font-semibold leading-6 text-muted">{feedback.summary}</p>
           <div className="mt-4 space-y-3 text-sm">
+            {feedback.strengths.length > 0 ? (
+              <div>
+                <p className="font-black">잘한 부분</p>
+                <ul className="mt-1 space-y-1 font-semibold leading-6 text-leaf">
+                  {feedback.strengths.map((strength) => (
+                    <li key={strength}>{strength}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             <div>
               <p className="font-black">빠진 개념</p>
               <p className="mt-1 font-semibold leading-6 text-muted">
