@@ -4,6 +4,21 @@ This runbook prepares the mobile-web-first GapPatch deployment path for Oracle C
 
 Do not deploy without explicit approval from the project owner. A production deployment requires the target OCI host, SSH user, deployment directory, domain name, TLS plan, environment values, and rollback approval.
 
+## Required Deployment Inputs
+
+Collect and confirm these values before any remote command:
+
+- OCI host
+- SSH user
+- deployment directory
+- domain name
+- TLS plan
+- environment values
+- rollback ref
+- explicit approval
+
+If any required input is missing, stop before SSH and record the missing value in the deployment evidence. Do not guess a host, domain, environment value, or rollback ref.
+
 ## Target Shape
 
 - Platform: Oracle Cloud Infrastructure compute instance.

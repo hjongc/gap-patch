@@ -12,6 +12,24 @@ describe("OCI deployment runbook", () => {
     expect(runbook).toContain("Oracle Cloud Infrastructure")
   })
 
+  it("documents the required OCI deployment inputs before remote changes", async () => {
+    const runbook = await readFile(join(process.cwd(), "docs/deployment/oci.md"), "utf8")
+
+    for (const requiredInput of [
+      "OCI host",
+      "SSH user",
+      "deployment directory",
+      "domain name",
+      "TLS plan",
+      "environment values",
+      "rollback ref",
+      "explicit approval",
+    ]) {
+      expect(runbook).toContain(requiredInput)
+    }
+    expect(runbook).toContain("If any required input is missing, stop before SSH")
+  })
+
   it("keeps the documented web start command executable", async () => {
     const manifest = JSON.parse(
       await readFile(join(process.cwd(), "apps/web/package.json"), "utf8"),
