@@ -171,13 +171,64 @@ describe("mobile web app services", () => {
       throw new Error("expected assignment creation to succeed")
     }
     expect(assignment.assignment).toMatchObject({
-      assignmentReason: expect.stringContaining("weak"),
+      assignmentReason: expect.stringContaining("헷갈리는"),
       conceptId: "networking.tcp.layer-ownership",
+      conceptLabel: "TCP 계층 책임",
       estimatedDifficulty: "foundation",
       generationSource: "approved_problem_pool",
       problemVersionId: expect.stringMatching(/^problem-/),
       realtimeGenerated: false,
       scenarioFrame: "debugging-log",
+      scenarioLabel: "디버깅 로그",
+    })
+  })
+
+  it("refreshes persisted daily assignment copy from the approved problem version", () => {
+    const state = createAppState()
+    const login = loginWithInvite(state, {
+      email: "ai@example.com",
+      inviteCode: "BETA-AI-0001",
+      timezone: "Asia/Seoul",
+    })
+
+    if (login.kind !== "ok") {
+      throw new Error("expected beta login to succeed")
+    }
+
+    state.assignmentsByKey.set(`${login.user.id}:2026-06-05`, {
+      answerGuidance: "Answer in 2-5 sentences.",
+      assignmentReason: "weak-spot probe",
+      conceptId: "networking.tcp.layer-ownership",
+      conceptLabel: "TCP layer ownership",
+      estimatedDifficulty: "foundation",
+      generationSource: "approved_problem_pool",
+      id: `${login.user.id}-legacy-copy`,
+      localDate: "2026-06-05",
+      problemVersionId: "problem-networking-tcp-layer-ownership-debugging-foundation-v1",
+      prompt: "A service log shows packet loss followed by TCP retransmissions.",
+      realtimeGenerated: false,
+      rubricVersionId: "rubric-networking-tcp-layer-ownership-v1",
+      scenarioFrame: "debugging-log",
+      scenarioLabel: "Debugging log",
+      subjectId: "computer-networking",
+      title: "TCP layer ownership during retransmission",
+      userId: login.user.id,
+    })
+
+    const assignment = createDailyAssignment(state, login.sessionId, "2026-06-05")
+
+    expect(assignment.kind).toBe("ok")
+    if (assignment.kind !== "ok") {
+      throw new Error("expected assignment creation to succeed")
+    }
+    expect(assignment.assignment).toMatchObject({
+      answerGuidance: expect.stringContaining("2-5문장"),
+      assignmentReason: expect.stringContaining("헷갈리는"),
+      conceptLabel: "TCP 계층 책임",
+      id: `${login.user.id}-legacy-copy`,
+      prompt: expect.stringContaining("패킷 손실"),
+      scenarioLabel: "디버깅 로그",
+      title: "TCP 재전송은 어느 계층의 책임일까?",
     })
   })
 
@@ -295,6 +346,42 @@ describe("mobile web app services", () => {
     expect(submission.feedback.score).toBeLessThan(1)
     expect(submission.history).toHaveLength(1)
     expect(submission.reviewItems[0]?.label).toBe("Needs review")
+  })
+
+  it("accepts Korean TCP ownership answers in deterministic fallback grading", () => {
+    const state = createAppState()
+    const login = loginWithInvite(state, {
+      email: "ai@example.com",
+      inviteCode: "BETA-AI-0001",
+      timezone: "Asia/Seoul",
+    })
+
+    if (login.kind !== "ok") {
+      throw new Error("expected beta login to succeed")
+    }
+
+    const assignment = createDailyAssignment(state, login.sessionId, "2026-06-04")
+    if (assignment.kind !== "ok") {
+      throw new Error("expected assignment creation to succeed")
+    }
+
+    const submission = submitAnswer(
+      state,
+      login.sessionId,
+      {
+        assignmentId: assignment.assignment.id,
+        answer:
+          "TCP 재전송은 전송 계층에서 맡고, 애플리케이션은 요청 재시도 정책과 타임아웃을 담당합니다.",
+      },
+      deterministicGradingProvider,
+    )
+
+    expect(submission.kind).toBe("ok")
+    if (submission.kind !== "ok") {
+      throw new Error("expected submission to succeed")
+    }
+    expect(submission.feedback.label).toBe("Stable")
+    expect(submission.reviewItems).toHaveLength(0)
   })
 
   it("schedules review from the submission clock instead of a fixed fixture date", () => {

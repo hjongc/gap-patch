@@ -34,10 +34,16 @@ export type SubmissionResponse = {
 
 export const assignmentSubjectLabels: Record<SubjectId, string> = {
   "ai-ml-foundations": "AI/ML",
-  "computer-networking": "Network",
-  "data-math-statistics": "Data/Math",
-  "operating-systems": "OS",
-  "software-engineering-systems": "Systems",
+  "computer-networking": "네트워크",
+  "data-math-statistics": "데이터/수학",
+  "operating-systems": "운영체제",
+  "software-engineering-systems": "시스템",
+}
+
+export const assignmentDifficultyLabels: Record<string, string> = {
+  deepening: "심화",
+  foundation: "기초",
+  working: "실전",
 }
 
 export const difficultyOptions = [

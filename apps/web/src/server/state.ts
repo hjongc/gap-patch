@@ -12,7 +12,11 @@ import type {
   UserConceptMastery,
 } from "./app-model"
 import { createAppState } from "./app-services"
-import { approvedProblemsForSubjects, problemById } from "./problem-bank"
+import {
+  applyProblemVersionToAssignment,
+  approvedProblemsForSubjects,
+  problemById,
+} from "./problem-bank"
 import { shouldKeepPersistedInvite } from "./seed-invites"
 
 const globalForGapPatch = globalThis as typeof globalThis & {
@@ -137,27 +141,7 @@ function normalizeAssignment(assignment: Assignment): Assignment {
   if (!fallbackProblem) {
     return assignment
   }
-  if (existingProblem) {
-    return assignment
-  }
-
-  return {
-    ...assignment,
-    answerGuidance: fallbackProblem.answerGuidance,
-    assignmentReason: fallbackProblem.assignmentReason,
-    conceptId: fallbackProblem.conceptId,
-    conceptLabel: fallbackProblem.conceptLabel,
-    estimatedDifficulty: fallbackProblem.difficulty,
-    generationSource: fallbackProblem.generationSource,
-    problemVersionId: fallbackProblem.id,
-    prompt: fallbackProblem.prompt,
-    realtimeGenerated: false,
-    rubricVersionId: fallbackProblem.rubricVersionId,
-    scenarioFrame: fallbackProblem.scenarioFrame,
-    scenarioLabel: fallbackProblem.scenarioLabel,
-    subjectId: fallbackProblem.subjectId,
-    title: fallbackProblem.title,
-  }
+  return applyProblemVersionToAssignment(assignment, fallbackProblem)
 }
 
 function appStateFilePath(): string {

@@ -1,5 +1,24 @@
 import { expect, test } from "@playwright/test"
 
+type ManualGate = {
+  readonly open: () => void
+  readonly wait: Promise<void>
+}
+
+function createManualGate(): ManualGate {
+  let openGate: (() => void) | null = null
+  const wait = new Promise<void>((resolve) => {
+    openGate = resolve
+  })
+
+  return {
+    open: () => {
+      openGate?.()
+    },
+    wait,
+  }
+}
+
 test("mobile learner completes production personalized grading loop", async ({ page }) => {
   await page.goto("/login")
   await expect(page.getByLabel("이메일")).toHaveValue("")
@@ -14,14 +33,26 @@ test("mobile learner completes production personalized grading loop", async ({ p
   await page.getByRole("button", { name: "과목 저장" }).click()
 
   await expect(page.getByRole("heading", { name: "오늘의 문제" })).toBeVisible()
-  await expect(page.getByText("검수된 문제")).toBeVisible()
-  await expect(page.getByText("개념", { exact: true })).toBeVisible()
-  await expect(page.getByText("TCP layer ownership", { exact: true })).toBeVisible()
+  await expect(page.getByText("검수 완료")).toBeVisible()
+  await expect(page.getByText("기초", { exact: true })).toBeVisible()
+  await expect(page.getByText("개념: TCP 계층 책임", { exact: true })).toBeVisible()
+  await expect(page.getByText("foundation", { exact: true })).toHaveCount(0)
+  await expect(
+    page.getByRole("heading", { name: "TCP 재전송은 어느 계층의 책임일까?" }),
+  ).toBeVisible()
   await expect(page.getByText("상황", { exact: true })).toBeVisible()
-  await expect(page.getByText("Debugging log", { exact: true })).toBeVisible()
+  await expect(page.getByText("디버깅 로그", { exact: true })).toBeVisible()
   await expect(page.getByText("출제 이유", { exact: true })).toBeVisible()
-  await page.getByLabel("내 답안").fill("TCP retries are handled by the application layer.")
+  const submissionGate = createManualGate()
+  await page.route("**/api/submissions", async (route) => {
+    await submissionGate.wait
+    await route.continue()
+  })
+  await page.getByLabel("내 답안").fill("애플리케이션 계층이 TCP 재전송을 직접 맡습니다.")
   await page.getByRole("button", { name: "답안 제출" }).click()
+  await expect(page.getByRole("button", { name: "채점 중..." })).toBeDisabled()
+  await expect(page.getByText("답안을 채점하고 있어요")).toBeVisible()
+  submissionGate.open()
 
   await expect(page.getByText(/Partial|Needs review/)).toBeVisible()
   await expect(page.getByText("빠진 개념")).toBeVisible()
@@ -30,10 +61,10 @@ test("mobile learner completes production personalized grading loop", async ({ p
   await page.getByRole("button", { name: "어려움" }).click()
   await expect(page.getByText("난이도 저장됨")).toBeVisible()
   await page.getByRole("link", { name: "기록" }).click()
-  await expect(page.getByText("TCP layer ownership", { exact: true }).first()).toBeVisible()
+  await expect(page.getByText("TCP 계층 책임", { exact: true }).first()).toBeVisible()
   await expect(page.getByText("채점 기준", { exact: true })).toBeVisible()
   await page.getByRole("link", { name: "복습" }).click()
-  await expect(page.getByText("TCP layer ownership", { exact: true }).first()).toBeVisible()
+  await expect(page.getByText("TCP 계층 책임", { exact: true }).first()).toBeVisible()
   await expect(page.getByText("다음 복습", { exact: true })).toBeVisible()
 })
 

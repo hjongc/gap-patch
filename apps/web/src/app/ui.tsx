@@ -58,17 +58,35 @@ export function SurfaceCard({ children, tone = "plain" }: SurfaceCardProps) {
 
 type PrimaryButtonProps = {
   readonly children: ReactNode
+  readonly busyLabel?: string
   readonly disabled?: boolean
+  readonly isBusy?: boolean
 }
 
-export function PrimaryButton({ children, disabled = false }: PrimaryButtonProps) {
+export function PrimaryButton({
+  busyLabel = "처리 중...",
+  children,
+  disabled = false,
+  isBusy = false,
+}: PrimaryButtonProps) {
+  const isDisabled = disabled || isBusy
+
   return (
     <button
+      aria-busy={isBusy || undefined}
       className="motion-pop w-full rounded-[8px] border-b-[5px] border-leaf bg-accent px-4 py-3.5 text-sm font-black text-white shadow-[0_14px_30px_rgba(54,166,132,0.22)] transition active:translate-y-1 active:border-b-2 disabled:cursor-not-allowed disabled:border-muted disabled:bg-muted disabled:shadow-none"
-      disabled={disabled}
+      disabled={isDisabled}
       type="submit"
     >
-      {children}
+      <span className="inline-flex items-center justify-center gap-2">
+        {isBusy ? (
+          <span
+            aria-hidden="true"
+            className="size-4 rounded-full border-2 border-white/45 border-t-white motion-safe:animate-spin motion-reduce:animate-none"
+          />
+        ) : null}
+        {isBusy ? busyLabel : children}
+      </span>
     </button>
   )
 }
@@ -129,9 +147,13 @@ export function MascotMark() {
   return (
     <div
       aria-hidden="true"
-      className="motion-bob grid size-14 place-items-center rounded-full border-[3px] border-ink bg-banana text-xl font-black text-ink shadow-[0_7px_0_rgba(33,52,69,0.16)]"
+      className="motion-bob grid size-14 place-items-center rounded-full border-[3px] border-ink bg-banana shadow-[0_7px_0_rgba(33,52,69,0.16)]"
     >
-      빈
+      <div className="relative size-7 rotate-[-8deg] rounded-[7px] border-[3px] border-ink bg-panel shadow-[3px_3px_0_rgba(33,52,69,0.14)]">
+        <span className="absolute left-1/2 top-1 h-4 -translate-x-1/2 border-l-[3px] border-ink" />
+        <span className="absolute left-1 top-1/2 h-[3px] w-4 -translate-y-1/2 bg-ink" />
+        <span className="absolute -right-1 -top-1 size-2 rounded-full bg-coral" />
+      </div>
     </div>
   )
 }

@@ -19,7 +19,12 @@ import type {
 import { selectDailyProblem } from "./assignment-selection"
 import { deterministicGradingProvider, type GradingProvider } from "./grading"
 import { reviewItemsForUser, updateMastery } from "./mastery"
-import { coverageSlots, generationPolicy, problemVersionSummaries } from "./problem-bank"
+import {
+  coverageSlots,
+  generationPolicy,
+  problemVersionSummaries,
+  refreshAssignmentFromProblemBank,
+} from "./problem-bank"
 import { inviteMatchesEmail, seedInvites } from "./seed-invites"
 import { assignmentForUser, createSessionId, userForSession } from "./session-state"
 import { submitAnswerSync } from "./submission-service"
@@ -97,7 +102,9 @@ export function createDailyAssignment(
   const key = `${user.id}:${localDate}`
   const existing = state.assignmentsByKey.get(key)
   if (existing) {
-    return { kind: "ok", assignment: existing }
+    const refreshed = refreshAssignmentFromProblemBank(existing)
+    state.assignmentsByKey.set(key, refreshed)
+    return { kind: "ok", assignment: refreshed }
   }
 
   const selectedProblem = selectDailyProblem(state, user)

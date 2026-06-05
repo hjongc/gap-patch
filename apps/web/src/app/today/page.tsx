@@ -12,11 +12,12 @@ import {
   ProgressRail,
   SurfaceCard,
 } from "../ui"
+import { SubmissionFeedbackCard } from "./submission-feedback-card"
 import {
   type Assignment,
+  assignmentDifficultyLabels,
   assignmentSubjectLabels,
   type DifficultyOptionValue,
-  difficultyOptions,
   type SubmissionResponse,
   type TodayResponse,
 } from "./today-model"
@@ -26,6 +27,7 @@ export default function TodayPage() {
   const [answer, setAnswer] = useState("")
   const [feedback, setFeedback] = useState<SubmissionResponse["feedback"] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [difficultyError, setDifficultyError] = useState<string | null>(null)
@@ -58,8 +60,10 @@ export default function TodayPage() {
       return
     }
 
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    feedbackRef.current?.scrollIntoView({
+    const prefersReducedMotion =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    feedbackRef.current?.scrollIntoView?.({
       behavior: prefersReducedMotion ? "auto" : "smooth",
       block: "center",
     })
@@ -67,11 +71,12 @@ export default function TodayPage() {
 
   async function submitAnswer(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!assignment) {
+    if (!assignment || isSubmitting) {
       return
     }
 
     setSubmitError(null)
+    setIsSubmitting(true)
     try {
       const response = await ky
         .post("/api/submissions", { json: { assignmentId: assignment.id, answer } })
@@ -85,6 +90,8 @@ export default function TodayPage() {
         return
       }
       throw caught
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -156,16 +163,16 @@ export default function TodayPage() {
                 {assignmentSubjectLabels[assignment.subjectId]}
               </LearningBadge>
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-black sm:grid-cols-4">
-              <span className="rounded-[8px] border border-line bg-white px-3 py-2">
-                검수된 문제
+            <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-black leading-none">
+              <span className="rounded-full border border-line bg-white px-3 py-2 text-ink">
+                검수 완료
               </span>
-              <span className="rounded-[8px] border border-line bg-white px-3 py-2">
-                {assignment.estimatedDifficulty}
+              <span className="rounded-full border border-line bg-white px-3 py-2 text-ink">
+                {assignmentDifficultyLabels[assignment.estimatedDifficulty] ??
+                  assignment.estimatedDifficulty}
               </span>
-              <span className="rounded-[8px] border border-line bg-white px-3 py-2">개념</span>
-              <span className="rounded-[8px] border border-line bg-white px-3 py-2">
-                {assignment.conceptLabel}
+              <span className="max-w-full rounded-full border border-line bg-white px-3 py-2 text-ink">
+                개념: {assignment.conceptLabel}
               </span>
             </div>
             <h2 className="mt-4 text-xl font-black leading-tight sm:text-2xl">
@@ -198,51 +205,15 @@ export default function TodayPage() {
           </label>
           {feedback ? (
             <div ref={feedbackRef}>
-              <SurfaceCard tone="warm">
-                <div className="flex items-start gap-3">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-banana text-sm font-black text-banana-ink">
-                    +
-                  </span>
-                  <div>
-                    <p className="text-base font-black text-coral">{feedback.label}</p>
-                    <p className="mt-2 text-sm font-semibold leading-6 text-muted">
-                      {feedback.summary}
-                    </p>
-                    <div className="mt-4 space-y-3 text-sm">
-                      <div>
-                        <p className="font-black">빠진 개념</p>
-                        <p className="mt-1 font-semibold leading-6 text-muted">
-                          {feedback.missingConcepts[0] ?? "필수 개념 누락은 없습니다."}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="font-black">복습 개념</p>
-                        <p className="mt-1 font-semibold leading-6 text-muted">
-                          {feedback.reviewConcepts[0] ?? assignment.conceptLabel}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-4 grid grid-cols-3 gap-2">
-                      {difficultyOptions.map((option) => (
-                        <button
-                          className="rounded-[8px] border border-line bg-white px-3 py-2 text-xs font-black transition active:bg-banana"
-                          key={option.value}
-                          onClick={() => saveDifficulty(option.value)}
-                          type="button"
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                    {difficultySaved ? (
-                      <p className="mt-3 text-xs font-black text-leaf">{difficultySaved}</p>
-                    ) : null}
-                    {difficultyError ? (
-                      <p className="mt-3 text-xs font-black text-coral">{difficultyError}</p>
-                    ) : null}
-                  </div>
-                </div>
-              </SurfaceCard>
+              <SubmissionFeedbackCard
+                assignment={assignment}
+                difficultyError={difficultyError}
+                difficultySaved={difficultySaved}
+                feedback={feedback}
+                onSaveDifficulty={(perceivedDifficulty) => {
+                  void saveDifficulty(perceivedDifficulty)
+                }}
+              />
             </div>
           ) : null}
           {submitError ? (
@@ -250,7 +221,21 @@ export default function TodayPage() {
               {submitError}
             </p>
           ) : null}
-          <PrimaryButton disabled={answer.trim().length === 0}>답안 제출</PrimaryButton>
+          {isSubmitting ? (
+            <p
+              aria-live="polite"
+              className="rounded-[8px] border border-leaf/30 bg-accent/10 px-3 py-2 text-center text-xs font-black text-leaf"
+            >
+              답안을 채점하고 있어요
+            </p>
+          ) : null}
+          <PrimaryButton
+            busyLabel="채점 중..."
+            disabled={answer.trim().length === 0}
+            isBusy={isSubmitting}
+          >
+            답안 제출
+          </PrimaryButton>
         </form>
       ) : null}
     </MobileShell>
