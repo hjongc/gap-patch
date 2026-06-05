@@ -6,7 +6,6 @@ import type {
   AssignmentResult,
   DifficultyFeedbackInput,
   DifficultyFeedbackResult,
-  HistoryItem,
   HistoryResult,
   LoginInput,
   LoginResult,
@@ -20,14 +19,10 @@ import type {
 import { selectDailyProblem } from "./assignment-selection"
 import { deterministicGradingProvider, type GradingProvider } from "./grading"
 import { reviewItemsForUser, updateMastery } from "./mastery"
-import {
-  coverageSlots,
-  generationPolicy,
-  problemById,
-  problemVersionSummaries,
-} from "./problem-bank"
+import { coverageSlots, generationPolicy, problemVersionSummaries } from "./problem-bank"
 import { inviteMatchesEmail, seedInvites } from "./seed-invites"
 import { assignmentForUser, createSessionId, userForSession } from "./session-state"
+import { submitAnswerSync } from "./submission-service"
 
 const sessionTtlMs = 1000 * 60 * 60 * 24 * 30
 
@@ -167,52 +162,7 @@ export function submitAnswer(
   gradingProvider: GradingProvider = deterministicGradingProvider,
   now = new Date(),
 ): SubmissionResult {
-  const user = userForSession(state, sessionId)
-  if (
-    !user ||
-    input.assignmentId.length === 0 ||
-    input.answer.trim().length === 0 ||
-    !isPerceivedDifficultyInput(input.perceivedDifficulty)
-  ) {
-    return { kind: "error", code: "invalid_submission", status: 400 }
-  }
-
-  const assignment = assignmentForUser(state, user.id, input.assignmentId)
-  if (!assignment) {
-    return { kind: "error", code: "invalid_submission", status: 400 }
-  }
-
-  const problem = problemById(assignment.problemVersionId)
-  if (!problem) {
-    return { kind: "error", code: "invalid_submission", status: 400 }
-  }
-
-  const feedback = gradingProvider.grade({ input, problem })
-
-  const history = [
-    ...(state.historyByUserId.get(user.id) ?? []).filter(
-      (item) => item.assignmentId !== assignment.id,
-    ),
-    {
-      assignmentId: assignment.id,
-      conceptId: assignment.conceptId,
-      conceptLabel: assignment.conceptLabel,
-      feedback,
-      perceivedDifficulty: input.perceivedDifficulty,
-      problemVersionId: assignment.problemVersionId,
-      rubricVersionId: assignment.rubricVersionId,
-      scenarioLabel: assignment.scenarioLabel,
-      subjectId: assignment.subjectId,
-      title: assignment.title,
-    },
-  ] satisfies readonly HistoryItem[]
-
-  updateMastery(state, user.id, assignment, feedback, input.perceivedDifficulty, now)
-  const reviewItems = reviewItemsForUser(state, user.id)
-
-  state.historyByUserId.set(user.id, history)
-  state.reviewByUserId.set(user.id, reviewItems)
-  return { kind: "ok", feedback, history, reviewItems }
+  return submitAnswerSync(state, sessionId, input, gradingProvider, now)
 }
 
 export function updateDifficultyFeedback(
@@ -269,10 +219,4 @@ export function getAdminContentCoverage(_state: AppState): AdminContentCoverageR
     kind: "ok",
     problemVersions: problemVersionSummaries(),
   }
-}
-
-function isPerceivedDifficultyInput(
-  value: SubmissionInput["perceivedDifficulty"],
-): value is "easy" | "right" | "hard" | undefined {
-  return value === undefined || value === "easy" || value === "right" || value === "hard"
 }

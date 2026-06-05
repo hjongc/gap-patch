@@ -54,11 +54,19 @@ Required values:
 - `GAPPATCH_MASTER_INVITE_CODE`
 - `GAPPATCH_TEST_EMAIL`
 - `GAPPATCH_TEST_INVITE_CODE`
+- `GAPPATCH_GRADING_PROVIDER`
+- `AZURE_OPENAI_ENDPOINT`
+- `AZURE_OPENAI_API_KEY`
+- `AZURE_OPENAI_GRADING_DEPLOYMENT`
+- `AZURE_OPENAI_GRADING_TIMEOUT_MS`
 
 Cookie policy:
 
 - Use `GAPPATCH_SECURE_COOKIES=false` only for an IP-only HTTP deployment.
 - Remove it or set `GAPPATCH_SECURE_COOKIES=true` after a HTTPS domain is attached.
+- Keep `GAPPATCH_GRADING_PROVIDER=deterministic` until the Azure OpenAI endpoint, key, and deployment name are present.
+- Use `GAPPATCH_GRADING_PROVIDER=azure-openai` with `AZURE_OPENAI_GRADING_DEPLOYMENT` set to the Azure deployment name, not just the public model slug.
+- Store Azure OpenAI keys in the server `.env` or a secret manager. Do not commit them.
 
 The legacy local invite `BETA-AI-0001` is disabled by default when `NODE_ENV=production`.
 
