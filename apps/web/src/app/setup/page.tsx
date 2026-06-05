@@ -35,10 +35,10 @@ export default function SetupPage() {
   return (
     <MobileShell>
       <PageHeader
-        aside={<LearningBadge tone="sky">foundation</LearningBadge>}
-        eyebrow="Setup"
+        aside={<LearningBadge tone="sky">기초</LearningBadge>}
+        eyebrow="설정"
         kicker="오늘부터 패치할 과목을 고르면 매일 한 문제씩 밀어줄게."
-        title="Choose subjects"
+        title="과목 선택"
       />
       <form className="space-y-4" onSubmit={saveSubjects}>
         <ProgressRail current={1} total={2} />
@@ -61,7 +61,7 @@ export default function SetupPage() {
           </label>
         ))}
         <div className="pt-2">
-          <PrimaryButton>Save subjects</PrimaryButton>
+          <PrimaryButton>과목 저장</PrimaryButton>
         </div>
       </form>
     </MobileShell>

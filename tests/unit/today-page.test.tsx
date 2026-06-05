@@ -69,7 +69,7 @@ describe("TodayPage", () => {
 
     render(<TodayPage />)
 
-    expect(screen.getByText("Preparing today's patch...")).toBeVisible()
+    expect(screen.getByText("오늘의 패치를 준비 중...")).toBeVisible()
   })
 
   it("renders a recovery message when the assignment cannot load", async () => {
@@ -81,7 +81,7 @@ describe("TodayPage", () => {
 
     render(<TodayPage />)
 
-    expect(await screen.findByText("Could not load today's patch.")).toBeVisible()
-    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible()
+    expect(await screen.findByText("오늘의 문제를 불러오지 못했습니다.")).toBeVisible()
+    expect(screen.getByRole("button", { name: "다시 시도" })).toBeVisible()
   })
 })

@@ -31,7 +31,7 @@ export default function LoginPage() {
       }
     } catch (caught) {
       if (caught instanceof HTTPError) {
-        setError("Invite code is not valid.")
+        setError("초대 코드가 유효하지 않습니다.")
         return
       }
       throw caught
@@ -46,7 +46,7 @@ export default function LoginPage() {
             <p className="text-xs font-black uppercase tracking-[0.18em] text-leaf">
               {productIdentity.englishName}
             </p>
-            <LearningBadge tone="banana">beta club</LearningBadge>
+            <LearningBadge tone="banana">베타</LearningBadge>
           </div>
           <div className="grid grid-cols-[1fr_auto] items-end gap-4">
             <div className="space-y-3">
@@ -61,7 +61,7 @@ export default function LoginPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-leaf">
-                  today mission
+                  오늘 미션
                 </p>
                 <p className="mt-2 text-2xl font-black">1문제로 빈틈 패치</p>
               </div>
@@ -77,7 +77,7 @@ export default function LoginPage() {
         <SurfaceCard tone="accent">
           <form className="space-y-4" onSubmit={submitLogin}>
             <label className="block space-y-2 text-sm font-medium">
-              <span>Email</span>
+              <span>이메일</span>
               <input
                 className="w-full rounded-[8px] border-2 border-line bg-white px-3 py-3 font-semibold outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
                 onChange={(event) => setEmail(event.target.value)}
@@ -86,7 +86,7 @@ export default function LoginPage() {
               />
             </label>
             <label className="block space-y-2 text-sm font-medium">
-              <span>Invite code</span>
+              <span>초대 코드</span>
               <input
                 className="w-full rounded-[8px] border-2 border-line bg-white px-3 py-3 font-semibold outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
                 onChange={(event) => setInviteCode(event.target.value)}
@@ -96,7 +96,7 @@ export default function LoginPage() {
             {error ? (
               <p className="rounded-[8px] bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
             ) : null}
-            <PrimaryButton>Start practice</PrimaryButton>
+            <PrimaryButton>시작하기</PrimaryButton>
           </form>
         </SurfaceCard>
       </section>

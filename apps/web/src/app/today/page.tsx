@@ -1,6 +1,5 @@
 "use client"
 
-import type { SubjectId } from "@gappatch/domain"
 import ky from "ky"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { LearnerNav } from "../nav"
@@ -13,52 +12,14 @@ import {
   ProgressRail,
   SurfaceCard,
 } from "../ui"
-
-type Assignment = {
-  readonly id: string
-  readonly subjectId: SubjectId
-  readonly problemVersionId: string
-  readonly rubricVersionId: string
-  readonly conceptLabel: string
-  readonly scenarioLabel: string
-  readonly estimatedDifficulty: string
-  readonly assignmentReason: string
-  readonly generationSource: string
-  readonly answerGuidance: string
-  readonly title: string
-  readonly prompt: string
-}
-
-const assignmentSubjectLabels: Record<SubjectId, string> = {
-  "ai-ml-foundations": "AI/ML",
-  "computer-networking": "Network",
-  "data-math-statistics": "Data/Math",
-  "operating-systems": "OS",
-  "software-engineering-systems": "Systems",
-}
-
-const difficultyOptions = [
-  { label: "Easy", value: "easy" },
-  { label: "Right", value: "right" },
-  { label: "Hard", value: "hard" },
-] as const
-
-type TodayResponse = {
-  readonly ok: boolean
-  readonly assignment: Assignment
-}
-
-type SubmissionResponse = {
-  readonly ok: boolean
-  readonly feedback: {
-    readonly label: string
-    readonly summary: string
-    readonly strengths: readonly string[]
-    readonly missingConcepts: readonly string[]
-    readonly misconceptions: readonly string[]
-    readonly reviewConcepts: readonly string[]
-  }
-}
+import {
+  type Assignment,
+  assignmentSubjectLabels,
+  type DifficultyOptionValue,
+  difficultyOptions,
+  type SubmissionResponse,
+  type TodayResponse,
+} from "./today-model"
 
 export default function TodayPage() {
   const [assignment, setAssignment] = useState<Assignment | null>(null)
@@ -79,7 +40,7 @@ export default function TodayPage() {
       setAssignment(response.assignment)
     } catch (caught) {
       if (caught instanceof Error) {
-        setLoadError("Could not load today's patch.")
+        setLoadError("오늘의 문제를 불러오지 못했습니다.")
         return
       }
       throw caught
@@ -120,14 +81,14 @@ export default function TodayPage() {
       setDifficultyError(null)
     } catch (caught) {
       if (caught instanceof Error) {
-        setSubmitError("Could not submit this answer. Please try again.")
+        setSubmitError("답안을 제출하지 못했습니다. 다시 시도해 주세요.")
         return
       }
       throw caught
     }
   }
 
-  async function saveDifficulty(perceivedDifficulty: "easy" | "right" | "hard") {
+  async function saveDifficulty(perceivedDifficulty: DifficultyOptionValue) {
     if (!assignment) {
       return
     }
@@ -137,11 +98,11 @@ export default function TodayPage() {
       await ky.post("/api/submissions/difficulty", {
         json: { assignmentId: assignment.id, perceivedDifficulty },
       })
-      setDifficultySaved("Difficulty saved")
+      setDifficultySaved("난이도 저장됨")
     } catch (caught) {
       if (caught instanceof Error) {
         setDifficultySaved(null)
-        setDifficultyError("Could not save difficulty feedback.")
+        setDifficultyError("난이도 피드백을 저장하지 못했습니다.")
         return
       }
       throw caught
@@ -158,15 +119,15 @@ export default function TodayPage() {
             <LearningBadge tone="banana">1Q</LearningBadge>
           </div>
         }
-        eyebrow="Daily practice"
+        eyebrow="매일 연습"
         kicker="오늘의 작은 미션 하나만 클리어하자."
-        title="Today"
+        title="오늘의 문제"
       />
       {isLoading ? (
         <SurfaceCard>
-          <p className="text-sm font-black text-ink">Preparing today&apos;s patch...</p>
+          <p className="text-sm font-black text-ink">오늘의 패치를 준비 중...</p>
           <p className="mt-2 text-sm font-semibold leading-6 text-muted">
-            Pulling a reviewed problem from the approved pool.
+            검수된 문제은행에서 오늘 풀 문제를 고르고 있습니다.
           </p>
         </SurfaceCard>
       ) : null}
@@ -174,14 +135,14 @@ export default function TodayPage() {
         <SurfaceCard tone="warm">
           <p className="text-sm font-black text-coral">{loadError}</p>
           <p className="mt-2 text-sm font-semibold leading-6 text-muted">
-            Check your session and retry before starting today&apos;s answer.
+            세션을 확인한 뒤 다시 시도해 주세요.
           </p>
           <button
             className="mt-4 rounded-[8px] border border-line bg-white px-3 py-2 text-xs font-black"
             onClick={() => void loadToday()}
             type="button"
           >
-            Try again
+            다시 시도
           </button>
         </SurfaceCard>
       ) : null}
@@ -190,21 +151,19 @@ export default function TodayPage() {
           <ProgressRail current={feedback ? 2 : 1} total={2} />
           <SurfaceCard tone="accent">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-coral">
-                patch mission
-              </p>
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-coral">패치 미션</p>
               <LearningBadge tone="mint">
                 {assignmentSubjectLabels[assignment.subjectId]}
               </LearningBadge>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-black sm:grid-cols-4">
               <span className="rounded-[8px] border border-line bg-white px-3 py-2">
-                Approved pool
+                검수된 문제
               </span>
               <span className="rounded-[8px] border border-line bg-white px-3 py-2">
                 {assignment.estimatedDifficulty}
               </span>
-              <span className="rounded-[8px] border border-line bg-white px-3 py-2">Concept</span>
+              <span className="rounded-[8px] border border-line bg-white px-3 py-2">개념</span>
               <span className="rounded-[8px] border border-line bg-white px-3 py-2">
                 {assignment.conceptLabel}
               </span>
@@ -217,17 +176,17 @@ export default function TodayPage() {
             </p>
             <dl className="mt-4 space-y-3 text-sm font-semibold leading-6">
               <div>
-                <dt className="font-black text-ink">Scenario</dt>
+                <dt className="font-black text-ink">상황</dt>
                 <dd className="text-muted">{assignment.scenarioLabel}</dd>
               </div>
               <div>
-                <dt className="font-black text-ink">Why this problem</dt>
+                <dt className="font-black text-ink">출제 이유</dt>
                 <dd className="text-muted">{assignment.assignmentReason}</dd>
               </div>
             </dl>
           </SurfaceCard>
           <label className="block space-y-2 text-sm font-medium">
-            <span className="font-black">Your answer</span>
+            <span className="font-black">내 답안</span>
             <span className="block text-xs font-bold leading-5 text-muted">
               {assignment.answerGuidance}
             </span>
@@ -251,13 +210,13 @@ export default function TodayPage() {
                     </p>
                     <div className="mt-4 space-y-3 text-sm">
                       <div>
-                        <p className="font-black">Missing concept</p>
+                        <p className="font-black">빠진 개념</p>
                         <p className="mt-1 font-semibold leading-6 text-muted">
-                          {feedback.missingConcepts[0] ?? "No required concept is missing."}
+                          {feedback.missingConcepts[0] ?? "필수 개념 누락은 없습니다."}
                         </p>
                       </div>
                       <div>
-                        <p className="font-black">Review concept</p>
+                        <p className="font-black">복습 개념</p>
                         <p className="mt-1 font-semibold leading-6 text-muted">
                           {feedback.reviewConcepts[0] ?? assignment.conceptLabel}
                         </p>
@@ -291,7 +250,7 @@ export default function TodayPage() {
               {submitError}
             </p>
           ) : null}
-          <PrimaryButton disabled={answer.trim().length === 0}>Submit answer</PrimaryButton>
+          <PrimaryButton disabled={answer.trim().length === 0}>답안 제출</PrimaryButton>
         </form>
       ) : null}
     </MobileShell>

@@ -21,7 +21,7 @@ export default defineConfig({
   ],
   webServer: {
     command:
-      "GAPPATCH_ADMIN_EMAILS=ai@example.com pnpm --filter @gappatch/web dev --hostname 127.0.0.1 --port 3000",
+      "GAPPATCH_MASTER_EMAIL=master@gappatch.app GAPPATCH_MASTER_INVITE_CODE=MASTER-PATCH-0001 GAPPATCH_TEST_EMAIL=test@gappatch.app GAPPATCH_TEST_INVITE_CODE=TEST-PATCH-0001 GAPPATCH_DATA_FILE=.omo/evidence/playwright-state.json pnpm --filter @gappatch/web dev --hostname 127.0.0.1 --port 3000",
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env["CI"],
     timeout: 120000,

@@ -35,9 +35,9 @@ export default function HistoryPage() {
       <LearnerNav />
       <PageHeader
         aside={<LearningBadge tone="mint">{history.length}</LearningBadge>}
-        eyebrow="Attempts"
+        eyebrow="풀이 기록"
         kicker="작은 시도들이 쌓이면 빈틈 지도가 된다."
-        title="History"
+        title="기록"
       />
       {history.length > 0 ? (
         history.map((item) => (
@@ -51,11 +51,11 @@ export default function HistoryPage() {
                 <p className="mt-2 text-sm font-semibold text-muted">{item.conceptLabel}</p>
                 <dl className="mt-3 grid grid-cols-2 gap-3 text-xs font-bold text-muted">
                   <div>
-                    <dt className="font-black text-ink">Rubric</dt>
+                    <dt className="font-black text-ink">채점 기준</dt>
                     <dd className="mt-1">{item.rubricVersionId}</dd>
                   </div>
                   <div>
-                    <dt className="font-black text-ink">Scenario</dt>
+                    <dt className="font-black text-ink">상황</dt>
                     <dd className="mt-1">{item.scenarioLabel}</dd>
                   </div>
                 </dl>

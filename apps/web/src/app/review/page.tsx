@@ -34,9 +34,9 @@ export default function ReviewPage() {
       <LearnerNav />
       <PageHeader
         aside={<LearningBadge tone="coral">{reviewItems.length}</LearningBadge>}
-        eyebrow="Weak spots"
+        eyebrow="취약 개념"
         kicker="틀린 게 아니라, 다음 패치 후보가 생긴 거야."
-        title="Review"
+        title="복습"
       />
       <ProgressRail current={reviewItems.length > 0 ? 1 : 0} total={1} />
       {reviewItems.length > 0 ? (
@@ -48,11 +48,11 @@ export default function ReviewPage() {
             <p className="mt-3 text-sm font-semibold leading-6 text-muted">{item.reason}</p>
             <dl className="mt-4 grid grid-cols-2 gap-3 text-xs font-bold">
               <div>
-                <dt className="font-black text-ink">Next review</dt>
+                <dt className="font-black text-ink">다음 복습</dt>
                 <dd className="mt-1 text-muted">{item.nextReviewAt}</dd>
               </div>
               <div>
-                <dt className="font-black text-ink">Scenario</dt>
+                <dt className="font-black text-ink">상황</dt>
                 <dd className="mt-1 text-muted">{item.lastScenarioLabel}</dd>
               </div>
             </dl>

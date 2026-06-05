@@ -8,9 +8,9 @@ export const productIdentity = {
 } as const
 
 export const routeLabels = {
-  login: "Login",
-  setup: "Subjects",
-  today: "Today",
-  history: "History",
-  review: "Review",
+  login: "로그인",
+  setup: "과목",
+  today: "오늘",
+  history: "기록",
+  review: "복습",
 } as const

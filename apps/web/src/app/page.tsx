@@ -17,7 +17,7 @@ export default function HomePage() {
             </p>
           </div>
           <SurfaceCard tone="accent">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-coral">daily patch</p>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-coral">오늘 패치</p>
             <p className="mt-3 text-2xl font-black">하루 한 문제로 CS 감각을 깨운다</p>
           </SurfaceCard>
         </div>

@@ -39,7 +39,7 @@ export default function AdminContentPage() {
         setCoverage(response)
       } catch (caught) {
         if (caught instanceof Error) {
-          setLoadError("Admin access required.")
+          setLoadError("관리자 권한이 필요합니다.")
           return
         }
         throw caught
@@ -52,34 +52,33 @@ export default function AdminContentPage() {
   return (
     <MobileShell>
       <PageHeader
-        aside={<LearningBadge tone="sky">Admin</LearningBadge>}
-        eyebrow="Content ops"
-        kicker="Approved content supply, coverage, and generation controls."
-        title="Admin Content Operations"
+        aside={<LearningBadge tone="sky">관리자</LearningBadge>}
+        eyebrow="콘텐츠 운영"
+        kicker="검수된 문제 공급, 커버리지, 생성 정책을 한 화면에서 확인합니다."
+        title="관리자 콘텐츠 운영"
       />
       {loadError ? (
         <SurfaceCard tone="warm">
           <h2 className="text-xl font-black">{loadError}</h2>
           <p className="mt-3 text-sm font-semibold leading-6 text-muted">
-            Sign in with an approved admin account before opening content operations.
+            콘텐츠 운영 화면을 열기 전에 승인된 관리자 계정으로 로그인해 주세요.
           </p>
         </SurfaceCard>
       ) : null}
       {coverage ? (
         <div className="space-y-4">
           <SurfaceCard tone="accent">
-            <p className="text-xs font-black uppercase text-coral">Generation policy</p>
-            <h2 className="mt-2 text-xl font-black">No realtime per-user generation</h2>
+            <p className="text-xs font-black uppercase text-coral">생성 정책</p>
+            <h2 className="mt-2 text-xl font-black">사용자별 실시간 생성 없음</h2>
             <p className="mt-3 text-sm font-semibold leading-6 text-muted">
-              LLM generation runs by content slot, then approved problem versions are selected per
-              learner.
+              LLM 생성은 콘텐츠 슬롯 단위로 배치 실행하고, 승인된 문제 버전을 학습자별로 선택합니다.
             </p>
             <p className="mt-3 text-xs font-black text-muted">
-              Batch unit: {coverage.generationPolicy.batchGenerationUnit}
+              배치 단위: {coverage.generationPolicy.batchGenerationUnit}
             </p>
           </SurfaceCard>
           <SurfaceCard>
-            <p className="text-xs font-black uppercase text-coral">Content coverage</p>
+            <p className="text-xs font-black uppercase text-coral">콘텐츠 커버리지</p>
             <div className="mt-3 space-y-3">
               {coverage.coverage.map((slot) => (
                 <div className="rounded-[8px] border border-line bg-white p-3" key={slot.slotId}>
@@ -88,14 +87,14 @@ export default function AdminContentPage() {
                     {slot.scenarioLabel} / {slot.difficulty}
                   </p>
                   <p className="mt-2 text-xs font-black text-leaf">
-                    {slot.approvedProblemCount}/{slot.targetProblemCount} approved
+                    승인 {slot.approvedProblemCount}/{slot.targetProblemCount}
                   </p>
                 </div>
               ))}
             </div>
           </SurfaceCard>
           <SurfaceCard tone="warm">
-            <p className="text-xs font-black uppercase text-coral">Problem versions</p>
+            <p className="text-xs font-black uppercase text-coral">문제 버전</p>
             <div className="mt-3 space-y-3">
               {coverage.problemVersions.map((problem) => (
                 <div className="rounded-[8px] border border-line bg-white p-3" key={problem.id}>
@@ -107,15 +106,15 @@ export default function AdminContentPage() {
             </div>
           </SurfaceCard>
           <SurfaceCard>
-            <h2 className="text-xl font-black">Review queue readiness</h2>
+            <h2 className="text-xl font-black">복습 큐 준비도</h2>
             <p className="mt-3 text-sm font-semibold leading-6 text-muted">
-              Candidate generation, semantic dedupe, rubric checks, and approval states are modeled
-              for the next admin build-out.
+              후보 생성, 의미 중복 제거, 루브릭 검사, 승인 상태까지 다음 관리자 확장을 위해
+              모델링되어 있습니다.
             </p>
           </SurfaceCard>
         </div>
       ) : (
-        <p className="text-sm text-muted">Loading content coverage...</p>
+        <p className="text-sm text-muted">콘텐츠 커버리지를 불러오는 중...</p>
       )}
     </MobileShell>
   )

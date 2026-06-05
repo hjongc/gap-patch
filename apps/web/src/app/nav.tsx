@@ -4,9 +4,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 const navItems = [
-  { href: "/today", label: "Today" },
-  { href: "/review", label: "Review" },
-  { href: "/history", label: "History" },
+  { href: "/today", label: "오늘" },
+  { href: "/review", label: "복습" },
+  { href: "/history", label: "기록" },
 ] as const
 
 export function LearnerNav() {
