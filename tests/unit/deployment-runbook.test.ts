@@ -31,6 +31,23 @@ describe("OCI deployment runbook", () => {
     expect(runbook).toContain("If any required input is missing, stop before SSH")
   })
 
+  it("documents the known non-secret OCI target handoff values", async () => {
+    const runbook = await readFile(join(process.cwd(), "docs/deployment/oci.md"), "utf8")
+
+    for (const targetValue of [
+      "168.107.18.30",
+      "ubuntu",
+      "/Users/a11466/.ssh/oci-a1-chuncheon",
+      "/home/ubuntu/repos/gappatch",
+      "http://168.107.18.30/",
+      "GAPPATCH_SECURE_COOKIES=false",
+    ]) {
+      expect(runbook).toContain(targetValue)
+    }
+    expect(runbook).toContain("Do not print or copy private key contents")
+    expect(runbook).toContain("capture the rollback ref from the server")
+  })
+
   it("keeps the documented web start command executable", async () => {
     const manifest = JSON.parse(
       await readFile(join(process.cwd(), "apps/web/package.json"), "utf8"),

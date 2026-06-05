@@ -19,6 +19,37 @@ Collect and confirm these values before any remote command:
 
 If any required input is missing, stop before SSH and record the missing value in the deployment evidence. Do not guess a host, domain, environment value, or rollback ref.
 
+## Known OCI A1 Target
+
+These non-secret values are approved for GapPatch deployment handoff. Do not print or copy private key contents; use only the key path.
+
+- OCI host: `168.107.18.30`
+- SSH user: `ubuntu`
+- SSH key path: `/Users/a11466/.ssh/oci-a1-chuncheon`
+- SSH command: `ssh -i /Users/a11466/.ssh/oci-a1-chuncheon ubuntu@168.107.18.30`
+- GitHub repository: `https://github.com/hjongc/gap-patch.git`
+- Deployment repo directory: `/home/ubuntu/repos/gappatch`
+- Compose file: `/home/ubuntu/repos/gappatch/compose.yaml`
+- Compose project: `gappatch`
+- App container: `gappatch-web`
+- Public URL: `http://168.107.18.30/`
+- Health URL: `http://168.107.18.30/api/health`
+- Current domain plan: IP-only HTTP.
+- Current TLS plan: no app HTTPS until a real domain is attached to Caddy.
+- Cookie plan while IP-only: `GAPPATCH_SECURE_COOKIES=false` in the server `.env`.
+- Server `.env`: expected at `/home/ubuntu/repos/gappatch/.env`; verify presence without printing values.
+
+Before deploying a new ref, capture the rollback ref from the server instead of asking the user
+again when SSH is available:
+
+```sh
+ssh -i /Users/a11466/.ssh/oci-a1-chuncheon ubuntu@168.107.18.30 \
+  'git -C /home/ubuntu/repos/gappatch rev-parse HEAD'
+```
+
+Record that value in the deployment evidence as the rollback ref. If SSH is unavailable, stop and
+ask for a rollback ref rather than guessing.
+
 ## Target Shape
 
 - Platform: Oracle Cloud Infrastructure compute instance.
