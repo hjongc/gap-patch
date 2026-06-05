@@ -15,7 +15,6 @@ import {
 import { SubmissionFeedbackCard } from "./submission-feedback-card"
 import {
   type Assignment,
-  assignmentDifficultyLabels,
   assignmentSubjectLabels,
   type DifficultyOptionValue,
   type SubmissionResponse,
@@ -163,19 +162,7 @@ export default function TodayPage() {
                 {assignmentSubjectLabels[assignment.subjectId]}
               </LearningBadge>
             </div>
-            <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-black leading-none">
-              <span className="rounded-full border border-line bg-white px-3 py-2 text-ink">
-                검수 완료
-              </span>
-              <span className="rounded-full border border-line bg-white px-3 py-2 text-ink">
-                {assignmentDifficultyLabels[assignment.estimatedDifficulty] ??
-                  assignment.estimatedDifficulty}
-              </span>
-              <span className="max-w-full rounded-full border border-line bg-white px-3 py-2 text-ink">
-                개념: {assignment.conceptLabel}
-              </span>
-            </div>
-            <h2 className="mt-4 text-xl font-black leading-tight sm:text-2xl">
+            <h2 className="mt-5 text-xl font-black leading-tight sm:text-2xl">
               {assignment.title}
             </h2>
             <p className="mt-3 text-sm font-semibold leading-6 text-muted sm:text-base sm:leading-7">
