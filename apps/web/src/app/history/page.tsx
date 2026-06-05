@@ -7,6 +7,9 @@ import { LearningBadge, MobileShell, PageHeader, SurfaceCard } from "../ui"
 
 type HistoryItem = {
   readonly assignmentId: string
+  readonly conceptLabel: string
+  readonly rubricVersionId: string
+  readonly scenarioLabel: string
   readonly title: string
   readonly feedback: {
     readonly label: string
@@ -45,7 +48,18 @@ export default function HistoryPage() {
               </span>
               <div>
                 <h2 className="font-black">{item.title}</h2>
-                <p className="mt-2 text-sm font-semibold text-muted">{item.feedback.label}</p>
+                <p className="mt-2 text-sm font-semibold text-muted">{item.conceptLabel}</p>
+                <dl className="mt-3 grid grid-cols-2 gap-3 text-xs font-bold text-muted">
+                  <div>
+                    <dt className="font-black text-ink">Rubric</dt>
+                    <dd className="mt-1">{item.rubricVersionId}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-black text-ink">Scenario</dt>
+                    <dd className="mt-1">{item.scenarioLabel}</dd>
+                  </div>
+                </dl>
+                <p className="mt-3 text-sm font-black text-coral">{item.feedback.label}</p>
               </div>
             </div>
           </SurfaceCard>

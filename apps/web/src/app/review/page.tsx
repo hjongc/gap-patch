@@ -7,8 +7,12 @@ import { LearningBadge, MobileShell, PageHeader, ProgressRail, SurfaceCard } fro
 
 type ReviewItem = {
   readonly subjectLabel: string
+  readonly conceptLabel: string
   readonly label: string
   readonly reason: string
+  readonly nextReviewAt: string
+  readonly lastScenarioLabel: string
+  readonly perceivedDifficulty?: string
 }
 
 export default function ReviewPage() {
@@ -37,10 +41,21 @@ export default function ReviewPage() {
       <ProgressRail current={reviewItems.length > 0 ? 1 : 0} total={1} />
       {reviewItems.length > 0 ? (
         reviewItems.map((item) => (
-          <SurfaceCard key={item.subjectLabel} tone="warm">
+          <SurfaceCard key={item.conceptLabel} tone="warm">
             <p className="text-sm font-black text-coral">{item.label}</p>
-            <h2 className="mt-2 text-xl font-black">{item.subjectLabel}</h2>
+            <h2 className="mt-2 text-xl font-black">{item.conceptLabel}</h2>
+            <p className="mt-2 text-xs font-black uppercase text-muted">{item.subjectLabel}</p>
             <p className="mt-3 text-sm font-semibold leading-6 text-muted">{item.reason}</p>
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-xs font-bold">
+              <div>
+                <dt className="font-black text-ink">Next review</dt>
+                <dd className="mt-1 text-muted">{item.nextReviewAt}</dd>
+              </div>
+              <div>
+                <dt className="font-black text-ink">Scenario</dt>
+                <dd className="mt-1 text-muted">{item.lastScenarioLabel}</dd>
+              </div>
+            </dl>
           </SurfaceCard>
         ))
       ) : (
