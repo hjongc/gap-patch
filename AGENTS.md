@@ -20,6 +20,17 @@ Build in this order:
 Do not start native mobile implementation until the web MVP gates pass.
 Do not perform remote OCI deployment without explicit server details and approval.
 
+## Deployment Handoff
+
+For OCI deployment, read `docs/deployment/oci.md` before deciding that deployment
+details are missing. That runbook is the source of truth for the approved
+non-secret OCI target values, SSH key path, deployment directory, public URL,
+TLS plan, rollback capture command, and smoke tests.
+
+Do not duplicate secrets in `AGENTS.md`. Do not print private key contents or
+server `.env` values. Remote deployment still requires explicit approval before
+SSH, Docker, proxy, or production HTTP verification commands.
+
 ## Stack
 
 - Package manager: pnpm workspace.
@@ -56,4 +67,3 @@ Every user-facing change needs:
 - Automated test evidence.
 - Real surface evidence through browser, HTTP, or tmux.
 - Cleanup receipt for any spawned server/session.
-
