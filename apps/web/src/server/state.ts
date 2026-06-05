@@ -13,6 +13,7 @@ import type {
 } from "./app-model"
 import { createAppState } from "./app-services"
 import { approvedProblemsForSubjects, problemById } from "./problem-bank"
+import { shouldKeepPersistedInvite } from "./seed-invites"
 
 const globalForGapPatch = globalThis as typeof globalThis & {
   __gappatchState?: AppState
@@ -84,7 +85,9 @@ export function hydrateAppState(persisted: PersistedAppState): AppState {
   const state = createAppState()
   for (const invite of persisted.invites) {
     const normalized = normalizeInvite(invite)
-    state.invites.set(normalized.code, normalized)
+    if (shouldKeepPersistedInvite(normalized)) {
+      state.invites.set(normalized.code, normalized)
+    }
   }
   for (const user of persisted.users) {
     const normalized = normalizeUser(user)

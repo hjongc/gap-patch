@@ -1,7 +1,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { loadAppStateFromFile, saveAppStateToFile } from "../../apps/web/src/server/state"
 import {
@@ -13,6 +13,10 @@ import {
 } from "../test-support/app-service-imports"
 
 describe("file-backed app state", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it("keeps learner history available after a server restart", async () => {
     const directory = await mkdtemp(join(tmpdir(), "gappatch-state-"))
     const stateFile = join(directory, "state.json")
@@ -101,6 +105,42 @@ describe("file-backed app state", () => {
         throw new Error("expected migrated invite to work")
       }
       expect(login.user.role).toBe("learner")
+    } finally {
+      await rm(directory, { force: true, recursive: true })
+    }
+  })
+
+  it("does not preserve the public beta invite from persisted production state", async () => {
+    vi.stubEnv("NODE_ENV", "production")
+    const directory = await mkdtemp(join(tmpdir(), "gappatch-state-"))
+    const stateFile = join(directory, "state.json")
+
+    try {
+      await writeFile(
+        stateFile,
+        `${JSON.stringify(
+          {
+            assignments: [],
+            history: [],
+            invites: ["BETA-AI-0001"],
+            review: [],
+            sessions: [],
+            users: [],
+          },
+          null,
+          2,
+        )}\n`,
+      )
+
+      const restarted = await loadAppStateFromFile(stateFile)
+      const login = loginWithInvite(restarted, {
+        email: "internet@gappatch.app",
+        inviteCode: "BETA-AI-0001",
+        timezone: "Asia/Seoul",
+      })
+
+      expect(restarted.invites.has("BETA-AI-0001")).toBe(false)
+      expect(login).toEqual({ kind: "error", code: "invalid_invite", status: 401 })
     } finally {
       await rm(directory, { force: true, recursive: true })
     }

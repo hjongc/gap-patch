@@ -15,13 +15,13 @@ describe("health snapshot", () => {
     vi.stubEnv("GAPPATCH_DATA_FILE", "/var/lib/gappatch/state.json")
     vi.stubEnv("GAPPATCH_MASTER_EMAIL", "")
     vi.stubEnv("GAPPATCH_MASTER_INVITE_CODE", "")
-    vi.stubEnv("GAPPATCH_TEST_EMAIL", "")
-    vi.stubEnv("GAPPATCH_TEST_INVITE_CODE", "")
+    vi.stubEnv("GAPPATCH_TEST_EMAIL", "test@gappatch.app")
+    vi.stubEnv("GAPPATCH_TEST_INVITE_CODE", "TEST-PATCH-0001")
     vi.stubEnv("NODE_ENV", "production")
     const state = createAppState()
     const login = loginWithInvite(state, {
-      email: "ai@example.com",
-      inviteCode: "BETA-AI-0001",
+      email: "test@gappatch.app",
+      inviteCode: "TEST-PATCH-0001",
       timezone: "Asia/Seoul",
     })
 

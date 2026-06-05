@@ -165,6 +165,7 @@ export function submitAnswer(
   sessionId: string,
   input: SubmissionInput,
   gradingProvider: GradingProvider = deterministicGradingProvider,
+  now = new Date(),
 ): SubmissionResult {
   const user = userForSession(state, sessionId)
   if (
@@ -206,7 +207,7 @@ export function submitAnswer(
     },
   ] satisfies readonly HistoryItem[]
 
-  updateMastery(state, user.id, assignment, feedback, input.perceivedDifficulty)
+  updateMastery(state, user.id, assignment, feedback, input.perceivedDifficulty, now)
   const reviewItems = reviewItemsForUser(state, user.id)
 
   state.historyByUserId.set(user.id, history)

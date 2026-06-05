@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
+import { deterministicGradingProvider } from "../../apps/web/src/server/grading"
 import {
   createAppState,
   createDailyAssignment,
@@ -46,6 +47,19 @@ describe("mobile web app services", () => {
     const login = loginWithInvite(state, {
       email: "ai@example.com",
       inviteCode: "NOPE",
+      timezone: "Asia/Seoul",
+    })
+
+    expect(login).toEqual({ kind: "error", code: "invalid_invite", status: 401 })
+  })
+
+  it("does not seed the public beta invite in production", () => {
+    vi.stubEnv("NODE_ENV", "production")
+    const state = createAppState()
+
+    const login = loginWithInvite(state, {
+      email: "internet@example.com",
+      inviteCode: "BETA-AI-0001",
       timezone: "Asia/Seoul",
     })
 
@@ -281,6 +295,41 @@ describe("mobile web app services", () => {
     expect(submission.feedback.score).toBeLessThan(1)
     expect(submission.history).toHaveLength(1)
     expect(submission.reviewItems[0]?.label).toBe("Needs review")
+  })
+
+  it("schedules review from the submission clock instead of a fixed fixture date", () => {
+    const state = createAppState()
+    const login = loginWithInvite(state, {
+      email: "ai@example.com",
+      inviteCode: "BETA-AI-0001",
+      timezone: "Asia/Seoul",
+    })
+
+    if (login.kind !== "ok") {
+      throw new Error("expected beta login to succeed")
+    }
+
+    const assignment = createDailyAssignment(state, login.sessionId, "2026-07-10")
+    if (assignment.kind !== "ok") {
+      throw new Error("expected assignment creation to succeed")
+    }
+
+    const submission = submitAnswer(
+      state,
+      login.sessionId,
+      {
+        assignmentId: assignment.assignment.id,
+        answer: "TCP retries are handled by the application layer.",
+      },
+      deterministicGradingProvider,
+      new Date("2026-07-10T00:00:00.000Z"),
+    )
+
+    expect(submission.kind).toBe("ok")
+    if (submission.kind !== "ok") {
+      throw new Error("expected submission to succeed")
+    }
+    expect(submission.reviewItems[0]?.nextReviewAt).toBe("2026-07-12")
   })
 
   it("rejects malformed production submissions without mutating history", () => {

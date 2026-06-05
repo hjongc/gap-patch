@@ -7,6 +7,7 @@ export function updateMastery(
   assignment: Assignment,
   feedback: Feedback,
   perceivedDifficulty: PerceivedDifficulty | undefined,
+  now = new Date(),
 ): void {
   const key = masteryKey(userId, assignment.conceptId)
   const stability = Math.max(
@@ -18,7 +19,7 @@ export function updateMastery(
     conceptLabel: assignment.conceptLabel,
     lastMisconception: feedback.misconceptions[0],
     lastScore: feedback.score,
-    nextReviewAt: nextReviewDateFor(feedback.label, perceivedDifficulty),
+    nextReviewAt: nextReviewDateFor(feedback.label, perceivedDifficulty, now),
     perceivedDifficulty,
     stability,
     userId,
@@ -74,9 +75,10 @@ function difficultyPenalty(perceivedDifficulty: PerceivedDifficulty | undefined)
 function nextReviewDateFor(
   label: Feedback["label"],
   perceivedDifficulty: PerceivedDifficulty | undefined,
+  now: Date,
 ): string {
   const days = label === "Stable" && perceivedDifficulty !== "hard" ? 7 : 2
-  const date = new Date("2026-06-05T00:00:00.000Z")
+  const date = new Date(now)
   date.setUTCDate(date.getUTCDate() + days)
   return date.toISOString().slice(0, 10)
 }

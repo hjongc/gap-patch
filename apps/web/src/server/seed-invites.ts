@@ -10,8 +10,10 @@ export class SeedInviteConfigError extends Error {
   }
 }
 
+const legacyBetaInviteCode = "BETA-AI-0001"
+
 const legacyBetaInvite = {
-  code: "BETA-AI-0001",
+  code: legacyBetaInviteCode,
   role: "learner",
 } satisfies InviteCode
 
@@ -26,7 +28,9 @@ export function seedInvites(): Map<string, InviteCode> {
   const { GAPPATCH_MASTER_EMAIL, GAPPATCH_MASTER_INVITE_CODE } = process.env
   const { GAPPATCH_TEST_EMAIL, GAPPATCH_TEST_INVITE_CODE } = process.env
   const invites = new Map<string, InviteCode>()
-  addInvite(invites, legacyBetaInvite)
+  if (shouldSeedLegacyInvite()) {
+    addInvite(invites, legacyBetaInvite)
+  }
 
   addOptionalInvite(
     invites,
@@ -52,6 +56,10 @@ export function seedInvites(): Map<string, InviteCode> {
 
 export function inviteMatchesEmail(invite: InviteCode, email: string): boolean {
   return invite.email ? normalizeEmail(invite.email) === normalizeEmail(email) : true
+}
+
+export function shouldKeepPersistedInvite(invite: InviteCode): boolean {
+  return invite.code !== legacyBetaInviteCode || shouldSeedLegacyInvite()
 }
 
 function inviteFromEnv(input: SeedInviteInput): InviteCode | null {
@@ -81,4 +89,12 @@ function addInvite(invites: Map<string, InviteCode>, invite: InviteCode): void {
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
+}
+
+function shouldSeedLegacyInvite(): boolean {
+  const { GAPPATCH_ENABLE_LEGACY_INVITE, NODE_ENV } = process.env
+  if (GAPPATCH_ENABLE_LEGACY_INVITE === "true") {
+    return true
+  }
+  return NODE_ENV !== "production"
 }
