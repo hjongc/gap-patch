@@ -1,15 +1,15 @@
-import { randomBytes } from "node:crypto"
 import { subjectIds } from "@gappatch/domain"
 import type {
+  AdminContentCoverageResult,
   AppState,
   Assignment,
   AssignmentResult,
-  Feedback,
+  DifficultyFeedbackInput,
+  DifficultyFeedbackResult,
   HistoryItem,
   HistoryResult,
   LoginInput,
   LoginResult,
-  ReviewItem,
   ReviewResult,
   SubjectSelectionInput,
   SubjectSelectionResult,
@@ -17,7 +17,16 @@ import type {
   SubmissionResult,
   User,
 } from "./app-model"
-import { subjectLabels } from "./app-model"
+import { deterministicGradingProvider, type GradingProvider } from "./grading"
+import { reviewItemsForUser, updateMastery } from "./mastery"
+import {
+  approvedProblemsForSubjects,
+  coverageSlots,
+  generationPolicy,
+  problemById,
+  problemVersionSummaries,
+} from "./problem-bank"
+import { assignmentForUser, createSessionId, userForSession } from "./session-state"
 
 const sessionTtlMs = 1000 * 60 * 60 * 24 * 30
 
@@ -29,6 +38,7 @@ export function createAppState(): AppState {
     assignmentsByKey: new Map(),
     historyByUserId: new Map(),
     reviewByUserId: new Map(),
+    masteryByUserConceptKey: new Map(),
   }
 }
 
@@ -59,10 +69,6 @@ export function loginWithInvite(state: AppState, input: LoginInput): LoginResult
   })
 
   return { kind: "ok", sessionId, user: currentUser }
-}
-
-export function createSessionId(): string {
-  return `sess_${randomBytes(32).toString("base64url")}`
 }
 
 export function updateSubjectSelection(
@@ -99,13 +105,30 @@ export function createDailyAssignment(
   const subjectId = user.selectedSubjects.includes("computer-networking")
     ? "computer-networking"
     : (user.selectedSubjects[0] ?? "computer-networking")
+  const selectedProblem =
+    approvedProblemsForSubjects([subjectId]).find((problem) => problem.subjectId === subjectId) ??
+    approvedProblemsForSubjects(user.selectedSubjects)[0]
+  if (!selectedProblem) {
+    return { kind: "error", code: "invalid_submission", status: 400 }
+  }
   const assignment = {
     id: `assignment-${user.id}-${localDate}`,
-    userId: user.id,
+    answerGuidance: selectedProblem.answerGuidance,
+    assignmentReason: selectedProblem.assignmentReason,
+    conceptId: selectedProblem.conceptId,
+    conceptLabel: selectedProblem.conceptLabel,
+    estimatedDifficulty: selectedProblem.difficulty,
+    generationSource: selectedProblem.generationSource,
     localDate,
-    subjectId,
-    title: "TCP retransmission ownership",
-    prompt: "When packet loss occurs, which layer is primarily responsible for TCP retransmission?",
+    problemVersionId: selectedProblem.id,
+    prompt: selectedProblem.prompt,
+    realtimeGenerated: false,
+    rubricVersionId: selectedProblem.rubricVersionId,
+    scenarioFrame: selectedProblem.scenarioFrame,
+    scenarioLabel: selectedProblem.scenarioLabel,
+    subjectId: selectedProblem.subjectId,
+    title: selectedProblem.title,
+    userId: user.id,
   } satisfies Assignment
 
   state.assignmentsByKey.set(key, assignment)
@@ -143,9 +166,15 @@ export function submitAnswer(
   state: AppState,
   sessionId: string,
   input: SubmissionInput,
+  gradingProvider: GradingProvider = deterministicGradingProvider,
 ): SubmissionResult {
   const user = userForSession(state, sessionId)
-  if (!user || input.assignmentId.length === 0 || input.answer.trim().length === 0) {
+  if (
+    !user ||
+    input.assignmentId.length === 0 ||
+    input.answer.trim().length === 0 ||
+    !isPerceivedDifficultyInput(input.perceivedDifficulty)
+  ) {
     return { kind: "error", code: "invalid_submission", status: 400 }
   }
 
@@ -154,36 +183,66 @@ export function submitAnswer(
     return { kind: "error", code: "invalid_submission", status: 400 }
   }
 
-  const answer = input.answer.toLowerCase()
-  const isStrong = answer.includes("transport") && answer.includes("tcp")
-  const feedback = {
-    score: isStrong && !answer.includes("application layer") ? 1 : 0.4,
-    label: isStrong && !answer.includes("application layer") ? "Stable" : "Needs review",
-    summary: "TCP retransmission is handled by TCP at the transport layer; review layer ownership.",
-  } satisfies Feedback
+  const problem = problemById(assignment.problemVersionId)
+  if (!problem) {
+    return { kind: "error", code: "invalid_submission", status: 400 }
+  }
+
+  const feedback = gradingProvider.grade({ input, problem })
 
   const history = [
-    ...(state.historyByUserId.get(user.id) ?? []),
+    ...(state.historyByUserId.get(user.id) ?? []).filter(
+      (item) => item.assignmentId !== assignment.id,
+    ),
     {
       assignmentId: assignment.id,
-      title: assignment.title,
-      subjectId: assignment.subjectId,
+      conceptId: assignment.conceptId,
+      conceptLabel: assignment.conceptLabel,
       feedback,
+      perceivedDifficulty: input.perceivedDifficulty,
+      problemVersionId: assignment.problemVersionId,
+      rubricVersionId: assignment.rubricVersionId,
+      scenarioLabel: assignment.scenarioLabel,
+      subjectId: assignment.subjectId,
+      title: assignment.title,
     },
   ] satisfies readonly HistoryItem[]
 
-  const reviewItems = [
-    {
-      subjectId: assignment.subjectId,
-      subjectLabel: subjectLabels[assignment.subjectId],
-      label: feedback.label,
-      reason: feedback.summary,
-    },
-  ] satisfies readonly ReviewItem[]
+  updateMastery(state, user.id, assignment, feedback, input.perceivedDifficulty)
+  const reviewItems = reviewItemsForUser(state, user.id)
 
   state.historyByUserId.set(user.id, history)
   state.reviewByUserId.set(user.id, reviewItems)
   return { kind: "ok", feedback, history, reviewItems }
+}
+
+export function updateDifficultyFeedback(
+  state: AppState,
+  sessionId: string,
+  input: DifficultyFeedbackInput,
+): DifficultyFeedbackResult {
+  const user = userForSession(state, sessionId)
+  if (!user || input.assignmentId.length === 0) {
+    return { kind: "error", code: "invalid_submission", status: 400 }
+  }
+
+  const assignment = assignmentForUser(state, user.id, input.assignmentId)
+  const history = state.historyByUserId.get(user.id) ?? []
+  const existingHistory = history.find((item) => item.assignmentId === input.assignmentId)
+  if (!assignment || !existingHistory) {
+    return { kind: "error", code: "invalid_submission", status: 400 }
+  }
+
+  const updatedHistory = history.map((item) =>
+    item.assignmentId === input.assignmentId
+      ? { ...item, perceivedDifficulty: input.perceivedDifficulty }
+      : item,
+  )
+  updateMastery(state, user.id, assignment, existingHistory.feedback, input.perceivedDifficulty)
+  const reviewItems = reviewItemsForUser(state, user.id)
+  state.historyByUserId.set(user.id, updatedHistory)
+  state.reviewByUserId.set(user.id, reviewItems)
+  return { kind: "ok", reviewItems }
 }
 
 export function getHistory(state: AppState, sessionId: string): HistoryResult {
@@ -204,34 +263,17 @@ export function getReview(state: AppState, sessionId: string): ReviewResult {
   return { kind: "ok", reviewItems: state.reviewByUserId.get(user.id) ?? [] }
 }
 
-function userForSession(state: AppState, sessionId: string): User | null {
-  const session = state.sessionsById.get(sessionId)
-  if (!session) {
-    return null
+export function getAdminContentCoverage(_state: AppState): AdminContentCoverageResult {
+  return {
+    coverage: coverageSlots(),
+    generationPolicy,
+    kind: "ok",
+    problemVersions: problemVersionSummaries(),
   }
-  const expiresAt = Date.parse(session.expiresAt)
-  if (Number.isNaN(expiresAt) || expiresAt <= Date.now()) {
-    state.sessionsById.delete(sessionId)
-    return null
-  }
-
-  for (const user of state.usersByEmail.values()) {
-    if (user.id === session.userId) {
-      return user
-    }
-  }
-  return null
 }
 
-function assignmentForUser(
-  state: AppState,
-  userId: string,
-  assignmentId: string,
-): Assignment | null {
-  for (const assignment of state.assignmentsByKey.values()) {
-    if (assignment.userId === userId && assignment.id === assignmentId) {
-      return assignment
-    }
-  }
-  return null
+function isPerceivedDifficultyInput(
+  value: SubmissionInput["perceivedDifficulty"],
+): value is "easy" | "right" | "hard" | undefined {
+  return value === undefined || value === "easy" || value === "right" || value === "hard"
 }

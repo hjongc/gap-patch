@@ -32,9 +32,17 @@ export type SubjectSelectionRequest = z.infer<typeof subjectSelectionRequestSche
 export const submissionRequestSchema = z.object({
   assignmentId: z.string().min(1),
   answer: z.string().min(1),
+  perceivedDifficulty: z.enum(["easy", "right", "hard"]).optional(),
 })
 
 export type SubmissionRequest = z.infer<typeof submissionRequestSchema>
+
+export const difficultyFeedbackRequestSchema = z.object({
+  assignmentId: z.string().min(1),
+  perceivedDifficulty: z.enum(["easy", "right", "hard"]),
+})
+
+export type DifficultyFeedbackRequest = z.infer<typeof difficultyFeedbackRequestSchema>
 
 function isSupportedTimezone(timezone: string): boolean {
   try {

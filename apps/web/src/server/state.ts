@@ -1,7 +1,16 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
-import type { AppState, Assignment, HistoryItem, ReviewItem, Session, User } from "./app-model"
+import type {
+  AppState,
+  Assignment,
+  HistoryItem,
+  ReviewItem,
+  Session,
+  User,
+  UserConceptMastery,
+} from "./app-model"
 import { createAppState } from "./app-services"
+import { approvedProblemsForSubjects, problemById } from "./problem-bank"
 
 const globalForGapPatch = globalThis as typeof globalThis & {
   __gappatchState?: AppState
@@ -15,6 +24,7 @@ type PersistedAppState = {
   readonly assignments: readonly Assignment[]
   readonly history: readonly (readonly [string, readonly HistoryItem[]])[]
   readonly review: readonly (readonly [string, readonly ReviewItem[]])[]
+  readonly mastery?: readonly UserConceptMastery[]
 }
 
 export async function getAppState(): Promise<AppState> {
@@ -58,6 +68,7 @@ export function serializeAppState(state: AppState): PersistedAppState {
     sessions: [...state.sessionsById.values()],
     assignments: [...state.assignmentsByKey.values()],
     history: [...state.historyByUserId.entries()],
+    mastery: [...state.masteryByUserConceptKey.values()],
     review: [...state.reviewByUserId.entries()],
   }
 }
@@ -75,7 +86,8 @@ export function hydrateAppState(persisted: PersistedAppState): AppState {
     state.sessionsById.set(session.id, session)
   }
   for (const assignment of persisted.assignments) {
-    state.assignmentsByKey.set(`${assignment.userId}:${assignment.localDate}`, assignment)
+    const normalized = normalizeAssignment(assignment)
+    state.assignmentsByKey.set(`${normalized.userId}:${normalized.localDate}`, normalized)
   }
   for (const [userId, history] of persisted.history) {
     state.historyByUserId.set(userId, history)
@@ -83,7 +95,41 @@ export function hydrateAppState(persisted: PersistedAppState): AppState {
   for (const [userId, review] of persisted.review) {
     state.reviewByUserId.set(userId, review)
   }
+  for (const mastery of persisted.mastery ?? []) {
+    state.masteryByUserConceptKey.set(`${mastery.userId}:${mastery.conceptId}`, mastery)
+  }
   return state
+}
+
+function normalizeAssignment(assignment: Assignment): Assignment {
+  const existingProblem = assignment.problemVersionId
+    ? problemById(assignment.problemVersionId)
+    : null
+  const fallbackProblem = existingProblem ?? approvedProblemsForSubjects([assignment.subjectId])[0]
+  if (!fallbackProblem) {
+    return assignment
+  }
+  if (existingProblem) {
+    return assignment
+  }
+
+  return {
+    ...assignment,
+    answerGuidance: fallbackProblem.answerGuidance,
+    assignmentReason: fallbackProblem.assignmentReason,
+    conceptId: fallbackProblem.conceptId,
+    conceptLabel: fallbackProblem.conceptLabel,
+    estimatedDifficulty: fallbackProblem.difficulty,
+    generationSource: fallbackProblem.generationSource,
+    problemVersionId: fallbackProblem.id,
+    prompt: fallbackProblem.prompt,
+    realtimeGenerated: false,
+    rubricVersionId: fallbackProblem.rubricVersionId,
+    scenarioFrame: fallbackProblem.scenarioFrame,
+    scenarioLabel: fallbackProblem.scenarioLabel,
+    subjectId: fallbackProblem.subjectId,
+    title: fallbackProblem.title,
+  }
 }
 
 function appStateFilePath(): string {

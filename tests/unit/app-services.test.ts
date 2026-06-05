@@ -92,6 +92,41 @@ describe("mobile web app services", () => {
     expect(second.assignment.id).toBe(first.assignment.id)
   })
 
+  it("selects daily assignments from approved pool without realtime llm generation", () => {
+    const state = createAppState()
+    const login = loginWithInvite(state, {
+      email: "ai@example.com",
+      inviteCode: "BETA-AI-0001",
+      timezone: "Asia/Seoul",
+    })
+
+    if (login.kind !== "ok") {
+      throw new Error("expected beta login to succeed")
+    }
+
+    const setup = updateSubjectSelection(state, login.sessionId, {
+      subjects: ["ai-ml-foundations", "computer-networking"],
+      difficulty: "foundation",
+    })
+    expect(setup.kind).toBe("ok")
+
+    const assignment = createDailyAssignment(state, login.sessionId, "2026-06-05")
+
+    expect(assignment.kind).toBe("ok")
+    if (assignment.kind !== "ok") {
+      throw new Error("expected assignment creation to succeed")
+    }
+    expect(assignment.assignment).toMatchObject({
+      assignmentReason: expect.stringContaining("weak"),
+      conceptId: "networking.tcp.layer-ownership",
+      estimatedDifficulty: "foundation",
+      generationSource: "approved_problem_pool",
+      problemVersionId: expect.stringMatching(/^problem-/),
+      realtimeGenerated: false,
+      scenarioFrame: "debugging-log",
+    })
+  })
+
   it("computes local dates from the user's timezone", () => {
     const instant = new Date("2026-06-04T15:30:00.000Z")
 
@@ -128,6 +163,35 @@ describe("mobile web app services", () => {
     expect(submission.feedback.score).toBeLessThan(1)
     expect(submission.history).toHaveLength(1)
     expect(submission.reviewItems[0]?.label).toBe("Needs review")
+  })
+
+  it("rejects malformed production submissions without mutating history", () => {
+    const state = createAppState()
+    const login = loginWithInvite(state, {
+      email: "ai@example.com",
+      inviteCode: "BETA-AI-0001",
+      timezone: "Asia/Seoul",
+    })
+
+    if (login.kind !== "ok") {
+      throw new Error("expected beta login to succeed")
+    }
+
+    const assignment = createDailyAssignment(state, login.sessionId, "2026-06-05")
+    if (assignment.kind !== "ok") {
+      throw new Error("expected assignment creation to succeed")
+    }
+
+    const malformedSubmission = {
+      assignmentId: assignment.assignment.id,
+      answer: "TCP retransmission belongs to the transport layer.",
+      perceivedDifficulty: "impossible",
+    }
+    const submission = submitAnswer(state, login.sessionId, malformedSubmission)
+    const history = getHistory(state, login.sessionId)
+
+    expect(submission).toEqual({ kind: "error", code: "invalid_submission", status: 400 })
+    expect(history).toEqual({ kind: "ok", history: [] })
   })
 
   it("rejects malformed submissions with a typed error", () => {

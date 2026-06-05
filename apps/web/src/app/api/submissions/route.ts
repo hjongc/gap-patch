@@ -2,7 +2,7 @@ import { submissionRequestSchema } from "@gappatch/api-contracts"
 import { NextResponse } from "next/server"
 
 import { submitAnswer } from "../../../server/app-services"
-import { jsonError, readSessionId, zodError } from "../../../server/http"
+import { jsonError, readSessionId } from "../../../server/http"
 import { getAppState, persistAppState } from "../../../server/state"
 
 export async function POST(request: Request) {
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
   const parsed = submissionRequestSchema.safeParse(await request.json())
   if (!parsed.success) {
-    return zodError(parsed.error)
+    return jsonError("invalid_submission", 400)
   }
 
   const state = await getAppState()
