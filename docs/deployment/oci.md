@@ -1,8 +1,8 @@
 # GapPatch OCI Deployment Runbook
 
-This runbook prepares the mobile-web-first GapPatch deployment path for Oracle Cloud Infrastructure.
+This runbook documents the Docker Compose deployment path used by the OCI A1 server.
 
-Do not deploy without explicit approval from the project owner. A production deployment requires the target OCI host, SSH user, deployment directory, domain name, TLS plan, environment values, and rollback approval.
+Do not deploy without explicit approval from the project owner. A production deployment requires the target OCI host, SSH user, deployment directory, domain name, TLS plan, environment values, rollback ref, and explicit approval.
 
 ## Required Deployment Inputs
 
@@ -22,11 +22,12 @@ If any required input is missing, stop before SSH and record the missing value i
 ## Target Shape
 
 - Platform: Oracle Cloud Infrastructure compute instance.
-- Runtime: Node.js 26 with pnpm 9.
-- App: Next.js standalone production server for `@gappatch/web`.
-- Process manager: `systemd`.
-- Edge: Nginx reverse proxy with HTTPS managed outside this repository.
-- Data: file-backed MVP state through `GAPPATCH_DATA_FILE`; move to a managed database before multi-instance scale.
+- Runtime: Docker image built from `node:22-bookworm-slim` with pnpm 9 through Corepack.
+- App: Next.js production server for `@gappatch/web`.
+- Process manager: Docker Compose with `restart: unless-stopped`.
+- Edge: Caddy reverse proxy on external Docker network `web`.
+- Compose file: repository root `compose.yaml`.
+- Data: file-backed MVP state through `GAPPATCH_DATA_FILE=/data/state.json`; move to a managed database before multi-instance scale.
 
 ## Local Preflight
 
@@ -35,121 +36,126 @@ Run these from the repository root before any server changes:
 ```sh
 pnpm lint
 pnpm typecheck
-pnpm test -- --run tests/unit/scaffold.test.ts tests/unit/app-services.test.ts tests/unit/deployment-runbook.test.ts
-pnpm test:e2e --project=mobile-chromium tests/e2e/mobile-web-flow.spec.ts
+pnpm test -- --run
+pnpm test:e2e
 pnpm build
+docker compose config
 ```
 
 `pnpm build` must finish without Next.js build errors. In the Codex sandbox it may require an unsandboxed run because Turbopack opens an internal port during build.
 
+## Environment
+
+Create the server-side `.env` from `.env.example` inside the deployed repo directory. Keep this file out of git.
+
+Required values:
+
+- `GAPPATCH_MASTER_EMAIL`
+- `GAPPATCH_MASTER_INVITE_CODE`
+- `GAPPATCH_TEST_EMAIL`
+- `GAPPATCH_TEST_INVITE_CODE`
+
+Cookie policy:
+
+- Use `GAPPATCH_SECURE_COOKIES=false` only for an IP-only HTTP deployment.
+- Remove it or set `GAPPATCH_SECURE_COOKIES=true` after a HTTPS domain is attached.
+
+The legacy local invite `BETA-AI-0001` is disabled by default when `NODE_ENV=production`.
+
 ## Server Preparation
 
-Install Node.js 26 and pnpm 9 on the OCI host. Confirm the app user can run:
+The OCI host should provide these paths:
 
-```sh
-node --version
-pnpm --version
+```text
+/home/ubuntu/infra/proxy/
+/home/ubuntu/infra/scripts/
+/home/ubuntu/repos/
+/home/ubuntu/services/
+/home/ubuntu/backups/
 ```
 
-Create a deployment directory owned by the app user:
+The Docker network is created by the deployment scripts when missing:
 
 ```sh
-sudo mkdir -p /opt/gappatch
-sudo chown gappatch:gappatch /opt/gappatch
-sudo mkdir -p /var/lib/gappatch
-sudo chown gappatch:gappatch /var/lib/gappatch
+docker network inspect web >/dev/null 2>&1 || docker network create web
 ```
 
 ## Build And Release
 
-From the deployment directory, fetch the approved revision and install dependencies:
+Deploy from GitHub with the server helper:
 
 ```sh
-git fetch --all --prune
-git checkout <approved-release-ref>
-pnpm install --frozen-lockfile
-pnpm build
+~/infra/scripts/deploy-git-service gappatch https://github.com/hjongc/gap-patch.git <approved-release-ref>
 ```
 
-Start the web app on an internal port:
+The helper clones or updates `/home/ubuntu/repos/gappatch`, then runs:
 
 ```sh
-pnpm --filter @gappatch/web start --hostname 127.0.0.1 --port 3000
+docker compose \
+  -f /home/ubuntu/repos/gappatch/compose.yaml \
+  --project-name gappatch \
+  --project-directory /home/ubuntu/repos/gappatch \
+  up -d --build
 ```
 
-## systemd Unit
+## Caddy Routing
 
-Create `/etc/systemd/system/gappatch-web.service`:
+Attach the app container to the existing public reverse proxy through the external `web` network.
 
-```ini
-[Unit]
-Description=GapPatch mobile web app
-After=network.target
+Example `sites/*.caddy` block:
 
-[Service]
-Type=simple
-User=gappatch
-WorkingDirectory=/opt/gappatch
-Environment=NODE_ENV=production
-Environment=GAPPATCH_DATA_FILE=/var/lib/gappatch/state.json
-ExecStart=/usr/bin/env pnpm --filter @gappatch/web start --hostname 127.0.0.1 --port 3000
-Restart=on-failure
-RestartSec=5
+```caddyfile
+:80 {
+    handle_path /hello* {
+        reverse_proxy hello:80
+    }
 
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable the service only after preflight approval:
-
-```sh
-sudo systemctl daemon-reload
-sudo systemctl enable gappatch-web
-sudo systemctl restart gappatch-web
-sudo systemctl status gappatch-web
-```
-
-## Nginx Reverse Proxy
-
-Route the public domain to the internal Next.js server:
-
-```nginx
-server {
-    listen 80;
-    server_name <domain>;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+    handle {
+        reverse_proxy gappatch-web:3000
     }
 }
 ```
 
-Add HTTPS before exposing the service to real users.
+Reload Caddy:
+
+```sh
+~/infra/scripts/proxy-reload
+```
+
+Add a domain and HTTPS before inviting real users beyond the trusted beta group.
 
 ## Smoke Test
 
 After deployment:
 
 ```sh
-curl -I https://<domain>/login
-curl -I https://<domain>/privacy
+curl -i http://<host>/api/health
+curl -I http://<host>/login
+curl -I http://<host>/hello/
 ```
 
-Then run the mobile E2E suite against the production base URL after explicit approval.
+Then verify seeded accounts through HTTP cookies:
+
+```sh
+curl -c /tmp/gappatch-test.cookie \
+  -H 'content-type: application/json' \
+  -d '{"email":"<test-email>","inviteCode":"<test-invite>","timezone":"Asia/Seoul"}' \
+  http://<host>/api/auth/beta-login
+
+curl -b /tmp/gappatch-test.cookie http://<host>/api/daily/today
+```
+
+Run the browser E2E suite against the production base URL only after explicit approval.
 
 ## Rollback
 
 Keep the previous approved git ref. To roll back:
 
 ```sh
+cd /home/ubuntu/repos/gappatch
+git fetch origin <previous-approved-ref>
 git checkout <previous-approved-ref>
-pnpm install --frozen-lockfile
-pnpm build
-sudo systemctl restart gappatch-web
+docker compose -f compose.yaml --project-name gappatch --project-directory "$PWD" up -d --build
 ```
 
 ## Open Production Gaps
@@ -158,4 +164,5 @@ sudo systemctl restart gappatch-web
 - Add production secrets and environment validation for external AI grading.
 - Add AI grading provider integration with cost and privacy controls.
 - Add account deletion workflow that deletes persisted user data.
+- Attach a real domain and HTTPS, then restore secure cookies for all production traffic.
 - Add native iOS and Android clients after the mobile web MVP is stabilized.

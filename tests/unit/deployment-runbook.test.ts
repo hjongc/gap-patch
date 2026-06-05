@@ -8,7 +8,8 @@ describe("OCI deployment runbook", () => {
 
     expect(runbook).toContain("Do not deploy without explicit approval")
     expect(runbook).toContain("pnpm build")
-    expect(runbook).toContain("systemd")
+    expect(runbook).toContain("compose.yaml")
+    expect(runbook).toContain("deploy-git-service")
     expect(runbook).toContain("Oracle Cloud Infrastructure")
   })
 

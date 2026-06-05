@@ -22,11 +22,14 @@ pnpm --filter @gappatch/web dev --hostname 127.0.0.1 --port 3000
 
 Open `http://127.0.0.1:3000/login`.
 
-Beta invite code:
+Local beta invite code:
 
 ```text
 BETA-AI-0001
 ```
+
+The local beta invite is disabled by default when `NODE_ENV=production`. Use `.env.example`
+to seed production master and test invite accounts.
 
 Local runtime data is stored in `.gappatch-data/state.json` by default. Override it with `GAPPATCH_DATA_FILE` when running a separate QA or production environment.
 
@@ -42,4 +45,7 @@ pnpm build
 
 ## Deployment
 
-See [docs/deployment/oci.md](docs/deployment/oci.md). Production deployment is approval-gated and requires OCI host details, domain/TLS decisions, and persistence work before real users.
+See [docs/deployment/oci.md](docs/deployment/oci.md). The OCI path uses the root `compose.yaml`
+with the server `deploy-git-service` helper, Caddy on the external `web` network, and a
+server-only `.env`. Production deployment is approval-gated and requires OCI host details,
+domain/TLS decisions, environment values, and rollback approval.
