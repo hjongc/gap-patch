@@ -1,0 +1,38 @@
+name: gappatch
+
+services:
+  app:
+    build:
+      context: .
+    container_name: gappatch-web
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      GAPPATCH_DATA_FILE: /data/state.json
+      NEXT_TELEMETRY_DISABLED: "1"
+      NODE_ENV: production
+    expose:
+      - "3000"
+    volumes:
+      - gappatch-data:/data
+    networks:
+      - web
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+networks:
+  web:
+    external: true
+
+volumes:
+  gappatch-data:
