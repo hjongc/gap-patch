@@ -30,11 +30,20 @@ type CoverageResponse = {
 
 export default function AdminContentPage() {
   const [coverage, setCoverage] = useState<CoverageResponse | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadCoverage() {
-      const response = await ky.get("/api/admin/content/coverage").json<CoverageResponse>()
-      setCoverage(response)
+      try {
+        const response = await ky.get("/api/admin/content/coverage").json<CoverageResponse>()
+        setCoverage(response)
+      } catch (caught) {
+        if (caught instanceof Error) {
+          setLoadError("Admin access required.")
+          return
+        }
+        throw caught
+      }
     }
 
     void loadCoverage()
@@ -48,6 +57,14 @@ export default function AdminContentPage() {
         kicker="Approved content supply, coverage, and generation controls."
         title="Admin Content Operations"
       />
+      {loadError ? (
+        <SurfaceCard tone="warm">
+          <h2 className="text-xl font-black">{loadError}</h2>
+          <p className="mt-3 text-sm font-semibold leading-6 text-muted">
+            Sign in with an approved admin account before opening content operations.
+          </p>
+        </SurfaceCard>
+      ) : null}
       {coverage ? (
         <div className="space-y-4">
           <SurfaceCard tone="accent">

@@ -2,7 +2,7 @@
 
 import type { SubjectId } from "@gappatch/domain"
 import ky from "ky"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { LearnerNav } from "../nav"
 import {
   LearningBadge,
@@ -64,17 +64,33 @@ export default function TodayPage() {
   const [assignment, setAssignment] = useState<Assignment | null>(null)
   const [answer, setAnswer] = useState("")
   const [feedback, setFeedback] = useState<SubmissionResponse["feedback"] | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [difficultyError, setDifficultyError] = useState<string | null>(null)
   const [difficultySaved, setDifficultySaved] = useState<string | null>(null)
   const feedbackRef = useRef<HTMLDivElement | null>(null)
 
-  useEffect(() => {
-    async function loadToday() {
+  const loadToday = useCallback(async function loadToday() {
+    setIsLoading(true)
+    setLoadError(null)
+    try {
       const response = await ky.get("/api/daily/today").json<TodayResponse>()
       setAssignment(response.assignment)
+    } catch (caught) {
+      if (caught instanceof Error) {
+        setLoadError("Could not load today's patch.")
+        return
+      }
+      throw caught
+    } finally {
+      setIsLoading(false)
     }
-
-    void loadToday()
   }, [])
+
+  useEffect(() => {
+    void loadToday()
+  }, [loadToday])
 
   useEffect(() => {
     if (!feedback) {
@@ -94,11 +110,21 @@ export default function TodayPage() {
       return
     }
 
-    const response = await ky
-      .post("/api/submissions", { json: { assignmentId: assignment.id, answer } })
-      .json<SubmissionResponse>()
-    setFeedback(response.feedback)
-    setDifficultySaved(null)
+    setSubmitError(null)
+    try {
+      const response = await ky
+        .post("/api/submissions", { json: { assignmentId: assignment.id, answer } })
+        .json<SubmissionResponse>()
+      setFeedback(response.feedback)
+      setDifficultySaved(null)
+      setDifficultyError(null)
+    } catch (caught) {
+      if (caught instanceof Error) {
+        setSubmitError("Could not submit this answer. Please try again.")
+        return
+      }
+      throw caught
+    }
   }
 
   async function saveDifficulty(perceivedDifficulty: "easy" | "right" | "hard") {
@@ -106,10 +132,20 @@ export default function TodayPage() {
       return
     }
 
-    await ky.post("/api/submissions/difficulty", {
-      json: { assignmentId: assignment.id, perceivedDifficulty },
-    })
-    setDifficultySaved("Difficulty saved")
+    setDifficultyError(null)
+    try {
+      await ky.post("/api/submissions/difficulty", {
+        json: { assignmentId: assignment.id, perceivedDifficulty },
+      })
+      setDifficultySaved("Difficulty saved")
+    } catch (caught) {
+      if (caught instanceof Error) {
+        setDifficultySaved(null)
+        setDifficultyError("Could not save difficulty feedback.")
+        return
+      }
+      throw caught
+    }
   }
 
   return (
@@ -126,7 +162,30 @@ export default function TodayPage() {
         kicker="오늘의 작은 미션 하나만 클리어하자."
         title="Today"
       />
-      {assignment ? (
+      {isLoading ? (
+        <SurfaceCard>
+          <p className="text-sm font-black text-ink">Preparing today&apos;s patch...</p>
+          <p className="mt-2 text-sm font-semibold leading-6 text-muted">
+            Pulling a reviewed problem from the approved pool.
+          </p>
+        </SurfaceCard>
+      ) : null}
+      {loadError ? (
+        <SurfaceCard tone="warm">
+          <p className="text-sm font-black text-coral">{loadError}</p>
+          <p className="mt-2 text-sm font-semibold leading-6 text-muted">
+            Check your session and retry before starting today&apos;s answer.
+          </p>
+          <button
+            className="mt-4 rounded-[8px] border border-line bg-white px-3 py-2 text-xs font-black"
+            onClick={() => void loadToday()}
+            type="button"
+          >
+            Try again
+          </button>
+        </SurfaceCard>
+      ) : null}
+      {assignment && !isLoading && !loadError ? (
         <form className="space-y-4" onSubmit={submitAnswer}>
           <ProgressRail current={feedback ? 2 : 1} total={2} />
           <SurfaceCard tone="accent">
@@ -219,16 +278,22 @@ export default function TodayPage() {
                     {difficultySaved ? (
                       <p className="mt-3 text-xs font-black text-leaf">{difficultySaved}</p>
                     ) : null}
+                    {difficultyError ? (
+                      <p className="mt-3 text-xs font-black text-coral">{difficultyError}</p>
+                    ) : null}
                   </div>
                 </div>
               </SurfaceCard>
             </div>
           ) : null}
+          {submitError ? (
+            <p className="rounded-[8px] border border-coral bg-panel px-3 py-2 text-sm font-black text-coral">
+              {submitError}
+            </p>
+          ) : null}
           <PrimaryButton disabled={answer.trim().length === 0}>Submit answer</PrimaryButton>
         </form>
-      ) : (
-        <p className="text-sm text-muted">Loading today&apos;s problem...</p>
-      )}
+      ) : null}
     </MobileShell>
   )
 }

@@ -12,8 +12,8 @@ type LoginResponse = {
 
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState("ai@example.com")
-  const [inviteCode, setInviteCode] = useState("BETA-AI-0001")
+  const [email, setEmail] = useState("")
+  const [inviteCode, setInviteCode] = useState("")
   const [error, setError] = useState<string | null>(null)
 
   async function submitLogin(event: React.FormEvent<HTMLFormElement>) {

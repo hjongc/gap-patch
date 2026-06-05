@@ -9,14 +9,34 @@ const kyMocks = vi.hoisted(() => ({
     json: async () => ({
       ok: true,
       assignment: {
+        answerGuidance: "Answer in 2-5 sentences.",
+        assignmentReason: "Coverage rotation for production practice.",
+        conceptLabel: "Overfitting and generalization",
+        estimatedDifficulty: "foundation",
+        generationSource: "approved_problem_pool",
         id: "assignment-ai",
+        problemVersionId: "problem-ai-overfitting-generalization-interview-foundation-v1",
+        prompt: "What does a learning rate control during optimization?",
+        rubricVersionId: "rubric-ai-overfitting-generalization-v1",
+        scenarioLabel: "Interview answer",
         subjectId: "ai-ml-foundations",
         title: "Gradient descent check",
-        prompt: "What does a learning rate control during optimization?",
       },
     }),
   })),
-  post: vi.fn(),
+  post: vi.fn(() => ({
+    json: async () => ({
+      feedback: {
+        label: "Partial",
+        missingConcepts: ["Name one mitigation."],
+        misconceptions: [],
+        reviewConcepts: ["ai.overfitting.generalization"],
+        strengths: [],
+        summary: "Tighten the answer.",
+      },
+      ok: true,
+    }),
+  })),
 }))
 
 vi.mock("ky", () => ({
@@ -40,5 +60,28 @@ describe("TodayPage", () => {
 
     expect(await screen.findByText("AI/ML")).toBeVisible()
     expect(screen.queryByText("network")).not.toBeInTheDocument()
+  })
+
+  it("renders a credible loading state before the assignment arrives", () => {
+    kyMocks.get.mockImplementationOnce(() => ({
+      json: async () => new Promise(() => {}),
+    }))
+
+    render(<TodayPage />)
+
+    expect(screen.getByText("Preparing today's patch...")).toBeVisible()
+  })
+
+  it("renders a recovery message when the assignment cannot load", async () => {
+    kyMocks.get.mockImplementationOnce(() => ({
+      json: async () => {
+        throw new Error("network down")
+      },
+    }))
+
+    render(<TodayPage />)
+
+    expect(await screen.findByText("Could not load today's patch.")).toBeVisible()
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible()
   })
 })

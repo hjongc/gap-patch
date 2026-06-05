@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test"
 
 test("mobile learner completes production personalized grading loop", async ({ page }) => {
   await page.goto("/login")
+  await expect(page.getByLabel("Email")).toHaveValue("")
+  await expect(page.getByLabel("Invite code")).toHaveValue("")
   await page.getByLabel("Email").fill("ai@example.com")
   await page.getByLabel("Invite code").fill("BETA-AI-0001")
   await page.getByRole("button", { name: "Start practice" }).click()
@@ -36,6 +38,11 @@ test("mobile learner completes production personalized grading loop", async ({ p
 })
 
 test("admin content page exposes production content operations", async ({ page }) => {
+  await page.goto("/login")
+  await page.getByLabel("Email").fill("ai@example.com")
+  await page.getByLabel("Invite code").fill("BETA-AI-0001")
+  await page.getByRole("button", { name: "Start practice" }).click()
+
   await page.goto("/admin/content")
 
   await expect(page.getByRole("heading", { name: "Admin Content Operations" })).toBeVisible()
@@ -51,8 +58,32 @@ test("production policy pages render real copy", async ({ page }) => {
   await expect(page.getByText("third-party AI grading")).toBeVisible()
 
   await page.goto("/support")
-  await expect(page.getByText("support@gappatch.local")).toBeVisible()
+  await expect(page.getByText("support@gappatch.local")).toHaveCount(0)
+  await expect(page.getByText("support@gappatch.app")).toBeVisible()
 
   await page.goto("/account/delete")
   await expect(page.getByRole("heading", { name: "Account deletion" })).toBeVisible()
+})
+
+test("production readiness endpoints expose safe public and admin surfaces", async ({
+  request,
+}) => {
+  const unauthorizedToday = await request.get("/api/daily/today")
+  expect(unauthorizedToday.status()).toBe(401)
+  await expect(unauthorizedToday.json()).resolves.toMatchObject({
+    error: { code: "unauthorized" },
+    ok: false,
+  })
+
+  const coverage = await request.get("/api/admin/content/coverage")
+  expect(coverage.status()).toBe(401)
+  await expect(coverage.json()).resolves.toMatchObject({
+    error: { code: "unauthorized" },
+    ok: false,
+  })
+
+  for (const path of ["/privacy", "/support", "/account/delete"]) {
+    const response = await request.get(path)
+    expect(response.status()).toBe(200)
+  }
 })
