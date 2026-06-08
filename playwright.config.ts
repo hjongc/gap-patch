@@ -25,7 +25,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `GAPPATCH_MASTER_EMAIL=master@gappatch.app GAPPATCH_MASTER_INVITE_CODE=MASTER-PATCH-0001 GAPPATCH_TEST_EMAIL=test@gappatch.app GAPPATCH_TEST_INVITE_CODE=TEST-PATCH-0001 GAPPATCH_SECURE_COOKIES=false GAPPATCH_DATA_FILE=${e2eStateFile} pnpm --filter @gappatch/web start --hostname 127.0.0.1 --port ${e2ePort}`,
+    command: `GAPPATCH_MASTER_EMAIL=master@gappatch.app GAPPATCH_MASTER_INVITE_CODE=MASTER-PATCH-0001 GAPPATCH_TEST_EMAIL=test@gappatch.app GAPPATCH_TEST_INVITE_CODE=TEST-PATCH-0001 GAPPATCH_ALLOW_INSECURE_AUTH=true GAPPATCH_SECURE_COOKIES=false GAPPATCH_DATA_FILE=${e2eStateFile} pnpm --filter @gappatch/web start --hostname 127.0.0.1 --port ${e2ePort}`,
     url: e2eBaseUrl,
     reuseExistingServer: false,
     timeout: 120000,

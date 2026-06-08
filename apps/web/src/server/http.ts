@@ -42,6 +42,23 @@ export function shouldUseSecureSessionCookies(): boolean {
   return NODE_ENV === "production"
 }
 
+export function shouldAllowAuthRequest(request: Request): boolean {
+  const { GAPPATCH_ALLOW_INSECURE_AUTH, NODE_ENV } = process.env
+  if (NODE_ENV !== "production") {
+    return true
+  }
+  if (GAPPATCH_ALLOW_INSECURE_AUTH === "true") {
+    return true
+  }
+
+  const forwardedProtocol = request.headers.get("x-forwarded-proto")
+  if (forwardedProtocol) {
+    return forwardedProtocol.toLowerCase() === "https"
+  }
+
+  return new URL(request.url).protocol === "https:"
+}
+
 export function jsonError(code: string, status: 400 | 401): NextResponse {
   return NextResponse.json({ ok: false, error: { code } }, { status })
 }

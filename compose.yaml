@@ -1,6 +1,27 @@
 name: gappatch
 
 services:
+  db:
+    image: postgres:17-alpine
+    container_name: gappatch-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gappatch
+      POSTGRES_USER: gappatch
+      POSTGRES_PASSWORD: ${GAPPATCH_POSTGRES_PASSWORD:?set GAPPATCH_POSTGRES_PASSWORD}
+    volumes:
+      - gappatch-postgres:/var/lib/postgresql/data
+    networks:
+      - private
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   app:
     build:
       context: .
@@ -10,14 +31,19 @@ services:
       - path: .env
         required: false
     environment:
+      DATABASE_URL: postgresql://gappatch:${GAPPATCH_POSTGRES_PASSWORD:?set GAPPATCH_POSTGRES_PASSWORD}@db:5432/gappatch
       GAPPATCH_DATA_FILE: /data/state.json
       NEXT_TELEMETRY_DISABLED: "1"
       NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
     expose:
       - "3000"
     volumes:
       - gappatch-data:/data
     networks:
+      - private
       - web
     healthcheck:
       test:
@@ -31,8 +57,10 @@ services:
       start_period: 30s
 
 networks:
+  private:
   web:
     external: true
 
 volumes:
   gappatch-data:
+  gappatch-postgres:

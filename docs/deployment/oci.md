@@ -37,6 +37,7 @@ These non-secret values are approved for GapPatch deployment handoff. Do not pri
 - Current domain plan: IP-only HTTP.
 - Current TLS plan: no app HTTPS until a real domain is attached to Caddy.
 - Cookie plan while IP-only: `GAPPATCH_SECURE_COOKIES=false` in the server `.env`.
+- Auth plan while IP-only: only public, non-authenticated smoke tests are allowed. Real login traffic requires HTTPS unless `GAPPATCH_ALLOW_INSECURE_AUTH=true` is temporarily set for a single-operator smoke test.
 - Server `.env`: expected at `/home/ubuntu/repos/gappatch/.env`; verify presence without printing values.
 
 Before deploying a new ref, capture the rollback ref from the server instead of asking the user
@@ -58,7 +59,8 @@ ask for a rollback ref rather than guessing.
 - Process manager: Docker Compose with `restart: unless-stopped`.
 - Edge: Caddy reverse proxy on external Docker network `web`.
 - Compose file: repository root `compose.yaml`.
-- Data: file-backed MVP state through `GAPPATCH_DATA_FILE=/data/state.json`; move to a managed database before multi-instance scale.
+- Data: Postgres-backed application state in the `gappatch-postgres` Docker volume.
+- Legacy migration source: `GAPPATCH_DATA_FILE=/data/state.json` stays mounted so the first Postgres start can import the last file-backed state when the database is empty.
 
 ## Local Preflight
 
@@ -70,7 +72,8 @@ pnpm typecheck
 pnpm test -- --run
 pnpm test:e2e
 pnpm build
-docker compose config
+printf 'GAPPATCH_POSTGRES_PASSWORD=compose-preflight-placeholder\n' > /tmp/gappatch-compose-preflight.env
+docker compose --env-file /tmp/gappatch-compose-preflight.env config
 ```
 
 `pnpm build` must finish without Next.js build errors. In the Codex sandbox it may require an unsandboxed run because Turbopack opens an internal port during build.
@@ -85,6 +88,7 @@ Required values:
 - `GAPPATCH_MASTER_INVITE_CODE`
 - `GAPPATCH_TEST_EMAIL`
 - `GAPPATCH_TEST_INVITE_CODE`
+- `GAPPATCH_POSTGRES_PASSWORD`
 - `GAPPATCH_GRADING_PROVIDER`
 - `AZURE_OPENAI_ENDPOINT`
 - `AZURE_OPENAI_API_KEY`
@@ -95,12 +99,19 @@ Cookie policy:
 
 - Use `GAPPATCH_SECURE_COOKIES=false` only for an IP-only HTTP deployment.
 - Remove it or set `GAPPATCH_SECURE_COOKIES=true` after a HTTPS domain is attached.
+- Keep `GAPPATCH_ALLOW_INSECURE_AUTH=false` for real beta traffic. Set it to `true` only for a short, single-operator HTTP smoke test, then remove it again.
 - Keep `GAPPATCH_GRADING_PROVIDER=deterministic` until the Azure OpenAI endpoint, key, and deployment name are present.
 - Use `GAPPATCH_GRADING_PROVIDER=azure-openai` with `AZURE_OPENAI_GRADING_DEPLOYMENT` set to the Azure deployment name, not just the public model slug. The current grading default is `gpt-5-mini`.
 - Legacy aliases `LLM_API_ENDPOINT`, `LLM_API_KEY`, `LLM_MODEL`, and `LLM_API_VERSION` are accepted. `LLM_API_VERSION` is ignored on the Azure v1 API path and exists only for compatibility with older `.env` files.
 - Store Azure OpenAI keys in the server `.env` or a secret manager. Do not commit them.
 
 The legacy local invite `BETA-AI-0001` is disabled by default when `NODE_ENV=production`.
+
+State storage policy:
+
+- `compose.yaml` builds `DATABASE_URL` from `GAPPATCH_POSTGRES_PASSWORD` and points the app at the internal `db` service.
+- Keep `GAPPATCH_DATA_FILE=/data/state.json` during the first Postgres rollout. The app imports that file into `app_state_snapshots` when Postgres is empty.
+- After the first successful migration has been verified, `/data/state.json` becomes a rollback/migration artifact rather than the primary store.
 
 ## Server Preparation
 
@@ -136,6 +147,51 @@ docker compose \
   --project-name gappatch \
   --project-directory /home/ubuntu/repos/gappatch \
   up -d --build
+```
+
+## Postgres first-run migration
+
+Before the first deployment of the Postgres-backed build, ensure the server `.env` contains
+`GAPPATCH_POSTGRES_PASSWORD`. Generate a URL-safe value on the server and append it without
+printing the value. The compose file interpolates this value into `DATABASE_URL`, so avoid
+characters that require URL escaping.
+
+On first app boot with an empty Postgres volume:
+
+1. The app connects through `DATABASE_URL`.
+2. It creates `app_state_snapshots` if missing.
+3. It reads `/data/state.json` when no database snapshot exists.
+4. It writes that snapshot into Postgres.
+5. Future writes update Postgres, not the file.
+
+Verify the migration without printing user data:
+
+```sh
+docker compose -f /home/ubuntu/repos/gappatch/compose.yaml \
+  --project-name gappatch \
+  --project-directory /home/ubuntu/repos/gappatch \
+  exec -T db psql -U gappatch -d gappatch \
+  -c "select id, jsonb_array_length(snapshot->'users') as users, jsonb_array_length(snapshot->'history') as history_owners, updated_at from app_state_snapshots;"
+```
+
+## Backup
+
+Create a compressed Postgres backup before and after production deploys that change storage:
+
+```sh
+umask 077
+install -d -m 700 /home/ubuntu/backups/gappatch
+docker compose -f /home/ubuntu/repos/gappatch/compose.yaml \
+  --project-name gappatch \
+  --project-directory /home/ubuntu/repos/gappatch \
+  exec -T db pg_dump -U gappatch -d gappatch \
+  | gzip > "/home/ubuntu/backups/gappatch/gappatch-$(date -u +%Y%m%dT%H%M%SZ).sql.gz"
+```
+
+Confirm the backup file exists and is non-empty:
+
+```sh
+ls -lh /home/ubuntu/backups/gappatch/
 ```
 
 ## Caddy Routing
@@ -176,6 +232,10 @@ curl -I http://<host>/hello/
 
 Then verify seeded accounts through HTTP cookies:
 
+Only run this authenticated smoke over HTTPS, or during a short single-operator HTTP smoke window
+with `GAPPATCH_ALLOW_INSECURE_AUTH=true`. Never invite real users while authenticated traffic is
+served over plain HTTP.
+
 ```sh
 curl -c /tmp/gappatch-test.cookie \
   -H 'content-type: application/json' \
@@ -198,11 +258,13 @@ git checkout <previous-approved-ref>
 docker compose -f compose.yaml --project-name gappatch --project-directory "$PWD" up -d --build
 ```
 
+For a storage rollback, keep the `gappatch-postgres` volume intact unless the project owner explicitly approves deleting it. The old `/data/state.json` may be stale after the migration and must not be treated as the latest source of truth once Postgres has accepted writes.
+
 ## Open Production Gaps
 
-- Replace file-backed MVP state with a managed database before multi-instance scale.
-- Add production secrets and environment validation for external AI grading.
-- Add AI grading provider integration with cost and privacy controls.
-- Add account deletion workflow that deletes persisted user data.
+- Move from the Docker-local Postgres volume to a managed Postgres service before multi-instance scale or broad public launch.
+- Add automated off-host backup retention and restore drills.
+- Add production secrets validation for external AI grading.
+- Add AI grading cost and privacy controls.
 - Attach a real domain and HTTPS, then restore secure cookies for all production traffic.
 - Add native iOS and Android clients after the mobile web MVP is stabilized.

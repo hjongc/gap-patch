@@ -46,7 +46,7 @@ export default function AdminHealthPage() {
       <PageHeader
         aside={<LearningBadge tone="sky">관리자</LearningBadge>}
         eyebrow="시스템 운영"
-        kicker="웹 프로세스와 파일 기반 상태를 빠르게 확인합니다."
+        kicker="웹 프로세스와 DB 상태를 빠르게 확인합니다."
         title="서비스 상태"
       />
       {loadError ? (
@@ -77,7 +77,11 @@ export default function AdminHealthPage() {
               <div className="rounded-[8px] border border-line bg-white px-3 py-2">
                 <dt className="text-muted">저장소</dt>
                 <dd className="mt-1 text-ink">
-                  {snapshot.runtime.dataFileConfigured ? "데이터 파일 설정됨" : "기본 데이터 파일"}
+                  {snapshot.runtime.stateBackend === "postgres"
+                    ? "Postgres"
+                    : snapshot.runtime.dataFileConfigured
+                      ? "데이터 파일 설정됨"
+                      : "기본 데이터 파일"}
                 </dd>
               </div>
               <div className="rounded-[8px] border border-line bg-white px-3 py-2">

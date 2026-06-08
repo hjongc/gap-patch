@@ -12,19 +12,21 @@ const kyMocks = vi.hoisted(() => ({
         checkedAt: "2026-06-05T00:00:00.000Z",
         ok: true,
         runtime: {
-          dataFileConfigured: true,
-          gradingProvider: "deterministic",
+          databaseConfigured: true,
+          dataFileConfigured: false,
+          gradingProvider: "azure-openai",
           nodeEnv: "production",
+          stateBackend: "postgres",
         },
         readiness: {
           checks: [
             {
-              detail: "GAPPATCH_DATA_FILE is configured.",
-              key: "data_file",
+              detail: "DATABASE_URL is configured.",
+              key: "database",
               status: "pass",
             },
             {
-              detail: "Deterministic grading is active.",
+              detail: "Azure OpenAI grading is configured.",
               key: "grading_provider",
               status: "pass",
             },
@@ -64,8 +66,8 @@ describe("AdminHealthPage", () => {
     expect(screen.getByText("gappatch-web")).toBeVisible()
     expect(screen.getByText("production")).toBeVisible()
     expect(screen.getByText("운영 준비됨")).toBeVisible()
-    expect(screen.getByText("Deterministic grading is active.")).toBeVisible()
-    expect(screen.getByText("데이터 파일 설정됨")).toBeVisible()
+    expect(screen.getByText("Azure OpenAI grading is configured.")).toBeVisible()
+    expect(screen.getByText("Postgres")).toBeVisible()
     expect(screen.getByText("사용자")).toBeVisible()
     expect(screen.getByText("배정")).toBeVisible()
     expect(screen.getByText("복습 항목")).toBeVisible()

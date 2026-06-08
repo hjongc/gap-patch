@@ -59,4 +59,18 @@ describe("OCI deployment runbook", () => {
 
     expect(manifest.scripts?.start).toBe("next start")
   })
+
+  it("documents Postgres migration and backup operations", async () => {
+    const runbook = await readFile(join(process.cwd(), "docs/deployment/oci.md"), "utf8")
+
+    expect(runbook).toContain("GAPPATCH_POSTGRES_PASSWORD")
+    expect(runbook).toContain("GAPPATCH_ALLOW_INSECURE_AUTH")
+    expect(runbook).toContain("DATABASE_URL")
+    expect(runbook).toContain("Postgres first-run migration")
+    expect(runbook).toContain("URL-safe")
+    expect(runbook).toContain("--env-file")
+    expect(runbook).toContain("pg_dump")
+    expect(runbook).toContain("app_state_snapshots")
+    expect(runbook).toContain("umask 077")
+  })
 })

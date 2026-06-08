@@ -39,9 +39,11 @@ describe("health snapshot", () => {
       checkedAt: "2026-06-05T00:00:00.000Z",
       ok: true,
       runtime: {
+        databaseConfigured: false,
         dataFileConfigured: true,
         gradingProvider: "deterministic",
         nodeEnv: "production",
+        stateBackend: "file",
       },
       readiness: {
         checks: [
@@ -104,5 +106,43 @@ describe("health snapshot", () => {
       ],
       ready: false,
     })
+  })
+
+  it("reports Postgres as the durable production state backend", () => {
+    vi.stubEnv("DATABASE_URL", "postgresql://gappatch:placeholder@db:5432/gappatch")
+    vi.stubEnv("GAPPATCH_DATA_FILE", "")
+    vi.stubEnv("NODE_ENV", "production")
+    const state = createAppState()
+
+    const snapshot = getHealthSnapshot(state, new Date("2026-06-05T00:00:00.000Z"))
+
+    expect(snapshot.runtime).toMatchObject({
+      dataFileConfigured: false,
+      databaseConfigured: true,
+      stateBackend: "postgres",
+    })
+    expect(snapshot.readiness.checks).toContainEqual({
+      detail: "DATABASE_URL is configured.",
+      key: "database",
+      status: "pass",
+    })
+    expect(snapshot.readiness.ready).toBe(true)
+  })
+
+  it("marks Postgres readiness as failed when the runtime database check fails", () => {
+    vi.stubEnv("DATABASE_URL", "postgresql://gappatch:placeholder@db:5432/gappatch")
+    vi.stubEnv("NODE_ENV", "production")
+    const state = createAppState()
+
+    const snapshot = getHealthSnapshot(state, new Date("2026-06-05T00:00:00.000Z"), {
+      databaseConnection: "fail",
+    })
+
+    expect(snapshot.readiness.checks).toContainEqual({
+      detail: "Postgres connection check failed.",
+      key: "database",
+      status: "fail",
+    })
+    expect(snapshot.readiness.ready).toBe(false)
   })
 })

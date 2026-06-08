@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { dirname, join } from "node:path"
+import { dirname } from "node:path"
 import type {
   AccountRole,
   AppState,
@@ -13,6 +13,8 @@ import type {
 } from "./app-model"
 import { subjectLabels } from "./app-model"
 import { createAppState } from "./app-services"
+import { getPostgresStateDatabase } from "./postgres-runtime-database"
+import { loadAppStateFromPostgres, saveAppStateToPostgres } from "./postgres-state-store"
 import {
   applyProblemVersionToAssignment,
   approvedProblemsForSubjects,
@@ -20,10 +22,11 @@ import {
   problemById,
 } from "./problem-bank"
 import { shouldKeepPersistedInvite } from "./seed-invites"
+import { resolveStateBackend, type StateBackend } from "./state-backend"
 
 const globalForGapPatch = globalThis as typeof globalThis & {
   __gappatchState?: AppState
-  __gappatchStateFile?: string
+  __gappatchStateKey?: string
 }
 
 type PersistedInviteCode = string | InviteCode
@@ -31,7 +34,7 @@ type PersistedUser = Omit<User, "role"> & {
   readonly role?: AccountRole | undefined
 }
 
-type PersistedAppState = {
+export type PersistedAppState = {
   readonly invites: readonly PersistedInviteCode[]
   readonly users: readonly PersistedUser[]
   readonly sessions: readonly Session[]
@@ -42,20 +45,21 @@ type PersistedAppState = {
 }
 
 export async function getAppState(): Promise<AppState> {
-  const filePath = appStateFilePath()
+  const backend = currentStateBackend()
+  const stateKey = stateBackendKey(backend)
   const existing = globalForGapPatch.__gappatchState
-  if (existing && globalForGapPatch.__gappatchStateFile === filePath) {
+  if (existing && globalForGapPatch.__gappatchStateKey === stateKey) {
     return existing
   }
 
-  const state = await loadAppStateFromFile(filePath)
+  const state = await loadAppState(backend)
   globalForGapPatch.__gappatchState = state
-  globalForGapPatch.__gappatchStateFile = filePath
+  globalForGapPatch.__gappatchStateKey = stateKey
   return state
 }
 
 export async function persistAppState(state: AppState): Promise<void> {
-  await saveAppStateToFile(state, appStateFilePath())
+  await saveAppState(state, currentStateBackend())
 }
 
 export async function loadAppStateFromFile(filePath: string): Promise<AppState> {
@@ -203,11 +207,40 @@ function normalizeReviewReason(reason: string, conceptId: Assignment["conceptId"
   return reason
 }
 
-function appStateFilePath(): string {
-  const env = process.env as { readonly GAPPATCH_DATA_FILE?: string }
-  return env.GAPPATCH_DATA_FILE ?? join(process.cwd(), ".gappatch-data/state.json")
-}
-
 function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && "code" in error && error.code === "ENOENT"
+}
+
+function currentStateBackend(): StateBackend {
+  const { DATABASE_URL, GAPPATCH_DATA_FILE } = process.env
+  return resolveStateBackend({
+    cwd: process.cwd(),
+    env: {
+      DATABASE_URL,
+      GAPPATCH_DATA_FILE,
+    },
+  })
+}
+
+async function loadAppState(backend: StateBackend): Promise<AppState> {
+  if (backend.kind === "postgres") {
+    return loadAppStateFromPostgres(getPostgresStateDatabase(), {
+      migrateFromFile: backend.legacyFilePath,
+    })
+  }
+
+  return loadAppStateFromFile(backend.filePath)
+}
+
+async function saveAppState(state: AppState, backend: StateBackend): Promise<void> {
+  if (backend.kind === "postgres") {
+    await saveAppStateToPostgres(state, getPostgresStateDatabase())
+    return
+  }
+
+  await saveAppStateToFile(state, backend.filePath)
+}
+
+function stateBackendKey(backend: StateBackend): string {
+  return backend.kind === "postgres" ? backend.cacheKey : `file:${backend.filePath}`
 }
