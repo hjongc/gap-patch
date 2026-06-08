@@ -32,12 +32,13 @@ These non-secret values are approved for GapPatch deployment handoff. Do not pri
 - Compose file: `/home/ubuntu/repos/gappatch/compose.yaml`
 - Compose project: `gappatch`
 - App container: `gappatch-web`
-- Public URL: `http://168.107.18.30/`
-- Health URL: `http://168.107.18.30/api/health`
-- Current domain plan: IP-only HTTP.
-- Current TLS plan: no app HTTPS until a real domain is attached to Caddy.
-- Cookie plan while IP-only: `GAPPATCH_SECURE_COOKIES=false` in the server `.env`.
-- Auth plan while IP-only: only public, non-authenticated smoke tests are allowed. Real login traffic requires HTTPS unless `GAPPATCH_ALLOW_INSECURE_AUTH=true` is temporarily set for a single-operator smoke test.
+- Public URL: `https://gappatch.168.107.18.30.sslip.io/`
+- Legacy IP health URL: `http://168.107.18.30/api/health`
+- Health URL: `https://gappatch.168.107.18.30.sslip.io/api/health`
+- Current domain plan: sslip.io HTTPS for beta traffic; replace with a branded domain before broad launch.
+- Current TLS plan: Caddy automatic HTTPS for `gappatch.168.107.18.30.sslip.io`.
+- Cookie plan: `GAPPATCH_SECURE_COOKIES=true` in the server `.env`.
+- Auth plan: real login traffic requires HTTPS unless `GAPPATCH_ALLOW_INSECURE_AUTH=true` is temporarily set for a single-operator HTTP smoke test.
 - Server `.env`: expected at `/home/ubuntu/repos/gappatch/.env`; verify presence without printing values.
 
 Before deploying a new ref, capture the rollback ref from the server instead of asking the user
@@ -97,8 +98,7 @@ Required values:
 
 Cookie policy:
 
-- Use `GAPPATCH_SECURE_COOKIES=false` only for an IP-only HTTP deployment.
-- Remove it or set `GAPPATCH_SECURE_COOKIES=true` after a HTTPS domain is attached.
+- Keep `GAPPATCH_SECURE_COOKIES=true` for beta traffic.
 - Keep `GAPPATCH_ALLOW_INSECURE_AUTH=false` for real beta traffic. Set it to `true` only for a short, single-operator HTTP smoke test, then remove it again.
 - Keep `GAPPATCH_GRADING_PROVIDER=deterministic` until the Azure OpenAI endpoint, key, and deployment name are present.
 - Use `GAPPATCH_GRADING_PROVIDER=azure-openai` with `AZURE_OPENAI_GRADING_DEPLOYMENT` set to the Azure deployment name, not just the public model slug. The current grading default is `gpt-5-mini`.
@@ -218,7 +218,7 @@ Reload Caddy:
 ~/infra/scripts/proxy-reload
 ```
 
-Add a domain and HTTPS before inviting real users beyond the trusted beta group.
+The current beta domain is `gappatch.168.107.18.30.sslip.io`; replace it with a branded domain before broad launch.
 
 ## Smoke Test
 
@@ -226,23 +226,25 @@ After deployment:
 
 ```sh
 curl -i http://<host>/api/health
+curl -i https://gappatch.168.107.18.30.sslip.io/api/health
 curl -I http://<host>/login
+curl -I https://gappatch.168.107.18.30.sslip.io/login
 curl -I http://<host>/hello/
 ```
 
-Then verify seeded accounts through HTTP cookies:
+Then verify seeded accounts through HTTPS cookies:
 
-Only run this authenticated smoke over HTTPS, or during a short single-operator HTTP smoke window
-with `GAPPATCH_ALLOW_INSECURE_AUTH=true`. Never invite real users while authenticated traffic is
-served over plain HTTP.
+Only run this authenticated smoke over HTTPS. Use a short single-operator HTTP smoke window with
+`GAPPATCH_ALLOW_INSECURE_AUTH=true` only when debugging the proxy itself. Never invite real users
+while authenticated traffic is served over plain HTTP.
 
 ```sh
 curl -c /tmp/gappatch-test.cookie \
   -H 'content-type: application/json' \
   -d '{"email":"<test-email>","inviteCode":"<test-invite>","timezone":"Asia/Seoul"}' \
-  http://<host>/api/auth/beta-login
+  https://gappatch.168.107.18.30.sslip.io/api/auth/beta-login
 
-curl -b /tmp/gappatch-test.cookie http://<host>/api/daily/today
+curl -b /tmp/gappatch-test.cookie https://gappatch.168.107.18.30.sslip.io/api/daily/today
 ```
 
 Run the browser E2E suite against the production base URL only after explicit approval.

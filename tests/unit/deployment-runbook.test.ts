@@ -39,8 +39,8 @@ describe("OCI deployment runbook", () => {
       "ubuntu",
       "/Users/a11466/.ssh/oci-a1-chuncheon",
       "/home/ubuntu/repos/gappatch",
-      "http://168.107.18.30/",
-      "GAPPATCH_SECURE_COOKIES=false",
+      "https://gappatch.168.107.18.30.sslip.io/",
+      "GAPPATCH_SECURE_COOKIES=true",
     ]) {
       expect(runbook).toContain(targetValue)
     }
