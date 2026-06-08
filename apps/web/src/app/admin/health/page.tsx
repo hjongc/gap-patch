@@ -17,7 +17,7 @@ const stateMetricLabels = [
   ["기록 항목", "historyItems"],
   ["복습 항목", "reviewItems"],
   ["숙련도 기록", "masteryRecords"],
-  ["초대 코드", "invites"],
+  ["레거시 항목", "invites"],
 ] as const
 
 export default function AdminHealthPage() {

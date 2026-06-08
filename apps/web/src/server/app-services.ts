@@ -15,6 +15,7 @@ import type {
   SubjectSelectionResult,
   SubmissionInput,
   SubmissionResult,
+  TemporaryLoginInput,
   User,
 } from "./app-model"
 import { selectDailyProblem } from "./assignment-selection"
@@ -29,13 +30,25 @@ import {
 import { inviteMatchesEmail, seedInvites } from "./seed-invites"
 import { assignmentForUser, createSessionId, userForSession } from "./session-state"
 import { submitAnswerSync } from "./submission-service"
+import { temporaryUserEmail } from "./temporary-users"
 
 const sessionTtlMs = 1000 * 60 * 60 * 24 * 30
+const temporaryUserRole = "learner"
 
 export { deleteAccount } from "./account-deletion"
 
 function createUserId(): string {
   return `user_${randomBytes(16).toString("base64url")}`
+}
+
+function createSessionForUser(state: AppState, user: User): string {
+  const sessionId = createSessionId()
+  state.sessionsById.set(sessionId, {
+    id: sessionId,
+    userId: user.id,
+    expiresAt: new Date(Date.now() + sessionTtlMs).toISOString(),
+  })
+  return sessionId
 }
 
 export function createAppState(): AppState {
@@ -71,14 +84,29 @@ export function loginWithInvite(state: AppState, input: LoginInput): LoginResult
 
   state.usersByEmail.set(input.email, currentUser)
 
-  const sessionId = createSessionId()
-  state.sessionsById.set(sessionId, {
-    id: sessionId,
-    userId: currentUser.id,
-    expiresAt: new Date(Date.now() + sessionTtlMs).toISOString(),
-  })
+  return { kind: "ok", sessionId: createSessionForUser(state, currentUser), user: currentUser }
+}
 
-  return { kind: "ok", sessionId, user: currentUser }
+export function loginWithTemporaryUserId(state: AppState, input: TemporaryLoginInput): LoginResult {
+  const email = temporaryUserEmail(input.temporaryUserId)
+  const existing = state.usersByEmail.get(email)
+  const user =
+    existing ??
+    ({
+      id: input.temporaryUserId,
+      email,
+      role: temporaryUserRole,
+      timezone: input.timezone,
+      selectedSubjects: subjectIds,
+      difficulty: "foundation",
+    } satisfies User)
+  const currentUser = existing
+    ? ({ ...user, role: temporaryUserRole, timezone: input.timezone } satisfies User)
+    : user
+
+  state.usersByEmail.set(email, currentUser)
+
+  return { kind: "ok", sessionId: createSessionForUser(state, currentUser), user: currentUser }
 }
 
 export function updateSubjectSelection(

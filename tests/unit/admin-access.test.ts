@@ -30,4 +30,15 @@ describe("admin access", () => {
     expect(isAdminUser(allowlisted)).toBe(true)
     expect(isAdminUser(learner)).toBe(false)
   })
+
+  it("does not allow temporary numeric users through the admin email allowlist", () => {
+    vi.stubEnv("GAPPATCH_ADMIN_EMAILS", "9000@temporary.gappatch.local")
+    const temporary = {
+      ...learner,
+      email: "9000@temporary.gappatch.local",
+      id: "9000",
+    } satisfies User
+
+    expect(isAdminUser(temporary)).toBe(false)
+  })
 })

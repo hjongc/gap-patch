@@ -6,6 +6,7 @@ export {
   getReview,
   localDateForTimezone,
   loginWithInvite,
+  loginWithTemporaryUserId,
   submitAnswer,
   updateDifficultyFeedback,
   updateSubjectSelection,

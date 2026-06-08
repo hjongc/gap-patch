@@ -21,10 +21,8 @@ function createManualGate(): ManualGate {
 
 test("mobile learner completes production personalized grading loop", async ({ page }) => {
   await page.goto("/login")
-  await expect(page.getByLabel("이메일")).toHaveValue("")
-  await expect(page.getByLabel("초대 코드")).toHaveValue("")
-  await page.getByLabel("이메일").fill("test@gappatch.app")
-  await page.getByLabel("초대 코드").fill("TEST-PATCH-0001")
+  await expect(page.getByLabel("임시 숫자 ID")).toHaveValue("")
+  await page.getByLabel("임시 숫자 ID").fill("1001")
   await page.getByRole("button", { name: "시작하기" }).click()
 
   await expect(page.getByRole("heading", { name: "과목 선택" })).toBeVisible()
@@ -72,11 +70,10 @@ test("mobile learner completes production personalized grading loop", async ({ p
   await expect(page.getByText("다음 복습", { exact: true })).toBeVisible()
 })
 
-test("admin content page exposes production content operations", async ({ page }) => {
+test("numeric learners cannot access admin content operations", async ({ page }) => {
   await page.context().clearCookies()
   await page.goto("/login")
-  await page.getByLabel("이메일").fill("master@gappatch.app")
-  await page.getByLabel("초대 코드").fill("MASTER-PATCH-0001")
+  await page.getByLabel("임시 숫자 ID").fill("9000")
   const loginResponse = page.waitForResponse(
     (response) => response.url().includes("/api/auth/beta-login") && response.status() === 200,
   )
@@ -90,24 +87,17 @@ test("admin content page exposes production content operations", async ({ page }
   await expect(page.getByRole("heading", { name: "과목 선택" })).toBeVisible()
 
   await page.goto("/admin/content")
-
-  await expect(page.getByRole("heading", { name: "관리자 콘텐츠 운영" })).toBeVisible()
-  await expect(page.getByText("콘텐츠 커버리지", { exact: true })).toBeVisible()
-  await expect(page.getByText("생성 정책", { exact: true })).toBeVisible()
-  await expect(page.getByText("사용자별 실시간 생성 없음", { exact: true })).toBeVisible()
-  await expect(page.getByText("문제 버전", { exact: true })).toBeVisible()
-  await expect(page.getByText("복습 큐 준비도", { exact: true })).toBeVisible()
+  await expect(page.getByText("관리자 권한이 필요합니다.")).toBeVisible()
 
   await page.goto("/admin/health")
-  await expect(page.getByRole("heading", { name: "서비스 상태" })).toBeVisible()
-  await expect(page.getByText("gappatch-web")).toBeVisible()
-  await expect(page.getByText("운영 준비됨")).toBeVisible()
-  await expect(page.getByText("운영 준비도")).toBeVisible()
+  await expect(page.getByText("관리자 권한이 필요합니다.")).toBeVisible()
 })
 
 test("production policy pages render real copy", async ({ page }) => {
   await page.goto("/privacy")
   await expect(page.getByText("외부 AI 채점")).toBeVisible()
+  await expect(page.getByText("임시 숫자 ID")).toBeVisible()
+  await expect(page.getByText("이메일")).toHaveCount(0)
 
   await page.goto("/support")
   await expect(page.getByText("support@gappatch.local")).toHaveCount(0)
@@ -119,20 +109,10 @@ test("production policy pages render real copy", async ({ page }) => {
 })
 
 test("learner can delete account data and revoke the session", async ({ page }, testInfo) => {
-  const account =
-    testInfo.project.name === "desktop-chromium"
-      ? {
-          email: "master@gappatch.app",
-          inviteCode: "MASTER-PATCH-0001",
-        }
-      : {
-          email: "test@gappatch.app",
-          inviteCode: "TEST-PATCH-0001",
-        }
+  const temporaryUserId = testInfo.project.name === "desktop-chromium" ? "3002" : "3001"
 
   await page.goto("/login")
-  await page.getByLabel("이메일").fill(account.email)
-  await page.getByLabel("초대 코드").fill(account.inviteCode)
+  await page.getByLabel("임시 숫자 ID").fill(temporaryUserId)
   await page.getByRole("button", { name: "시작하기" }).click()
 
   await expect(page.getByRole("heading", { name: "과목 선택" })).toBeVisible()

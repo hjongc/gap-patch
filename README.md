@@ -22,14 +22,14 @@ pnpm --filter @gappatch/web dev --hostname 127.0.0.1 --port 3000
 
 Open `http://127.0.0.1:3000/login`.
 
-Local beta invite code:
+Enter any temporary numeric ID, for example:
 
 ```text
-BETA-AI-0001
+0000
 ```
 
-The local beta invite is disabled by default when `NODE_ENV=production`. Use `.env.example`
-to seed production master and test invite accounts.
+The current beta login does not require email or invite codes. The number is used as a temporary
+learner ID.
 
 Local runtime data is stored in `.gappatch-data/state.json` by default. Override it with `GAPPATCH_DATA_FILE` when running a separate QA or production environment.
 

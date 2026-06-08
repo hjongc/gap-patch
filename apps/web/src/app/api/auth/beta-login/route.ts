@@ -1,6 +1,6 @@
 import { betaLoginRequestSchema } from "@gappatch/api-contracts"
 import { NextResponse } from "next/server"
-import { loginWithInvite } from "../../../../server/app-services"
+import { loginWithTemporaryUserId } from "../../../../server/app-services"
 import {
   jsonError,
   shouldAllowAuthRequest,
@@ -20,12 +20,12 @@ export async function POST(request: Request) {
   }
 
   const state = await getAppState()
-  const result = loginWithInvite(state, parsed.data)
+  const result = loginWithTemporaryUserId(state, parsed.data)
   if (result.kind === "error") {
     return jsonError(result.code, result.status)
   }
 
   await persistAppState(state)
   await writeSessionId(result.sessionId)
-  return NextResponse.json({ ok: true, user: { email: result.user.email } })
+  return NextResponse.json({ ok: true, user: { id: result.user.id } })
 }

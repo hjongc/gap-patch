@@ -1,6 +1,10 @@
 import type { User } from "./app-model"
+import { isTemporaryUserEmail } from "./temporary-users"
 
 export function isAdminUser(user: User): boolean {
+  if (isTemporaryUserEmail(user.email)) {
+    return false
+  }
   return user.role === "admin" || isAdminEmail(user.email)
 }
 

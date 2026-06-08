@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto"
 import type { AppState, Assignment, User } from "./app-model"
+import { isTemporaryUserId, temporaryUserEmail } from "./temporary-users"
 
 export function createSessionId(): string {
   return `sess_${randomBytes(32).toString("base64url")}`
@@ -14,6 +15,13 @@ export function userForSession(state: AppState, sessionId: string): User | null 
   if (Number.isNaN(expiresAt) || expiresAt <= Date.now()) {
     state.sessionsById.delete(sessionId)
     return null
+  }
+
+  if (isTemporaryUserId(session.userId)) {
+    const temporaryUser = state.usersByEmail.get(temporaryUserEmail(session.userId))
+    if (temporaryUser) {
+      return temporaryUser
+    }
   }
 
   for (const user of state.usersByEmail.values()) {

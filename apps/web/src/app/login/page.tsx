@@ -12,8 +12,7 @@ type LoginResponse = {
 
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [inviteCode, setInviteCode] = useState("")
+  const [temporaryUserId, setTemporaryUserId] = useState("")
   const [error, setError] = useState<string | null>(null)
 
   async function submitLogin(event: React.FormEvent<HTMLFormElement>) {
@@ -23,7 +22,10 @@ export default function LoginPage() {
     try {
       const result = await ky
         .post("/api/auth/beta-login", {
-          json: { email, inviteCode, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+          json: {
+            temporaryUserId,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
         })
         .json<LoginResponse>()
       if (result.ok) {
@@ -31,7 +33,7 @@ export default function LoginPage() {
       }
     } catch (caught) {
       if (caught instanceof HTTPError) {
-        setError("초대 코드가 유효하지 않습니다.")
+        setError("숫자만 입력해 주세요.")
         return
       }
       throw caught
@@ -77,20 +79,16 @@ export default function LoginPage() {
         <SurfaceCard tone="accent">
           <form className="space-y-4" onSubmit={submitLogin}>
             <label className="block space-y-2 text-sm font-medium">
-              <span>이메일</span>
+              <span>임시 숫자 ID</span>
               <input
+                autoComplete="off"
                 className="w-full rounded-[8px] border-2 border-line bg-white px-3 py-3 font-semibold outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
-                onChange={(event) => setEmail(event.target.value)}
-                type="email"
-                value={email}
-              />
-            </label>
-            <label className="block space-y-2 text-sm font-medium">
-              <span>초대 코드</span>
-              <input
-                className="w-full rounded-[8px] border-2 border-line bg-white px-3 py-3 font-semibold outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
-                onChange={(event) => setInviteCode(event.target.value)}
-                value={inviteCode}
+                inputMode="numeric"
+                onChange={(event) => setTemporaryUserId(event.target.value)}
+                pattern="[0-9]*"
+                placeholder="0000"
+                type="text"
+                value={temporaryUserId}
               />
             </label>
             {error ? (

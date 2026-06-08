@@ -66,6 +66,7 @@ describe("OCI deployment runbook", () => {
     expect(runbook).toContain("GAPPATCH_POSTGRES_PASSWORD")
     expect(runbook).toContain("GAPPATCH_ALLOW_INSECURE_AUTH")
     expect(runbook).toContain("DATABASE_URL")
+    expect(runbook).toContain("temporaryUserId")
     expect(runbook).toContain("Postgres first-run migration")
     expect(runbook).toContain("URL-safe")
     expect(runbook).toContain("--env-file")

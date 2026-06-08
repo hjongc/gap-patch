@@ -85,10 +85,6 @@ Create the server-side `.env` from `.env.example` inside the deployed repo direc
 
 Required values:
 
-- `GAPPATCH_MASTER_EMAIL`
-- `GAPPATCH_MASTER_INVITE_CODE`
-- `GAPPATCH_TEST_EMAIL`
-- `GAPPATCH_TEST_INVITE_CODE`
 - `GAPPATCH_POSTGRES_PASSWORD`
 - `GAPPATCH_GRADING_PROVIDER`
 - `AZURE_OPENAI_ENDPOINT`
@@ -105,7 +101,8 @@ Cookie policy:
 - Legacy aliases `LLM_API_ENDPOINT`, `LLM_API_KEY`, `LLM_MODEL`, and `LLM_API_VERSION` are accepted. `LLM_API_VERSION` is ignored on the Azure v1 API path and exists only for compatibility with older `.env` files.
 - Store Azure OpenAI keys in the server `.env` or a secret manager. Do not commit them.
 
-The legacy local invite `BETA-AI-0001` is disabled by default when `NODE_ENV=production`.
+The public beta login uses `temporaryUserId`, a digit-only temporary learner ID. It does not
+require email or invite-code environment values.
 
 State storage policy:
 
@@ -232,16 +229,16 @@ curl -I https://gappatch.168.107.18.30.sslip.io/login
 curl -I http://<host>/hello/
 ```
 
-Then verify seeded accounts through HTTPS cookies:
+Then verify temporary numeric login through HTTPS cookies:
 
 Only run this authenticated smoke over HTTPS. Use a short single-operator HTTP smoke window with
-`GAPPATCH_ALLOW_INSECURE_AUTH=true` only when debugging the proxy itself. Never invite real users
-while authenticated traffic is served over plain HTTP.
+`GAPPATCH_ALLOW_INSECURE_AUTH=true` only when debugging the proxy itself. Never send real login
+traffic over plain HTTP.
 
 ```sh
 curl -c /tmp/gappatch-test.cookie \
   -H 'content-type: application/json' \
-  -d '{"email":"<test-email>","inviteCode":"<test-invite>","timezone":"Asia/Seoul"}' \
+  -d '{"temporaryUserId":"1001","timezone":"Asia/Seoul"}' \
   https://gappatch.168.107.18.30.sslip.io/api/auth/beta-login
 
 curl -b /tmp/gappatch-test.cookie https://gappatch.168.107.18.30.sslip.io/api/daily/today

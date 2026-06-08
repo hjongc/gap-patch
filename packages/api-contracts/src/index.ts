@@ -4,9 +4,15 @@ const supportedTimezoneSchema = z.string().min(1).refine(isSupportedTimezone, {
   message: "Unsupported timezone",
 })
 
+const temporaryUserIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(32)
+  .regex(/^\d+$/, { message: "Use numbers only" })
+
 export const betaLoginRequestSchema = z.object({
-  email: z.string().email(),
-  inviteCode: z.string().min(1),
+  temporaryUserId: temporaryUserIdSchema,
   timezone: supportedTimezoneSchema.default("Asia/Seoul"),
 })
 

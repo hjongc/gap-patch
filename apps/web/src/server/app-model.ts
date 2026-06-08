@@ -144,6 +144,11 @@ export type LoginInput = {
   readonly timezone: string
 }
 
+export type TemporaryLoginInput = {
+  readonly temporaryUserId: string
+  readonly timezone: string
+}
+
 export type SubjectSelectionInput = {
   readonly subjects: readonly SubjectId[]
   readonly difficulty: Difficulty
