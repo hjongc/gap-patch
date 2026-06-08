@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>GapPatch app icon</title>
+  <rect width="512" height="512" rx="112" fill="#fffdf4"/>
+  <path d="M148 139 351 102l43 235-203 37-43-235Z" fill="#f6dc4b" stroke="#213445" stroke-width="30" stroke-linejoin="round"/>
+  <path d="m252 155 27 149" stroke="#213445" stroke-width="30" stroke-linecap="round"/>
+  <path d="m196 254 147-27" stroke="#213445" stroke-width="30" stroke-linecap="round"/>
+  <circle cx="380" cy="130" r="36" fill="#d76a4a" stroke="#213445" stroke-width="22"/>
+  <path d="M141 402h247" stroke="#36a684" stroke-width="30" stroke-linecap="round"/>
+</svg>

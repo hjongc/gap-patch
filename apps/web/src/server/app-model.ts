@@ -221,6 +221,21 @@ export type DifficultyFeedbackResult =
     }
   | ServiceError
 
+export type AccountDeletionCounts = {
+  readonly assignments: number
+  readonly historyItems: number
+  readonly masteryRecords: number
+  readonly reviewItems: number
+  readonly sessions: number
+}
+
+export type AccountDeletionResult =
+  | {
+      readonly kind: "ok"
+      readonly deleted: AccountDeletionCounts
+    }
+  | ServiceError
+
 export type AdminContentCoverageResult = {
   readonly kind: "ok"
   readonly coverage: readonly ContentCoverageSlot[]

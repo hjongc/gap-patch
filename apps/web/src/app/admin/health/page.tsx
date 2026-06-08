@@ -65,7 +65,9 @@ export default function AdminHealthPage() {
                 <p className="text-xs font-black uppercase text-coral">상태</p>
                 <h2 className="mt-2 text-2xl font-black">{snapshot.service}</h2>
               </div>
-              <LearningBadge tone="mint">{snapshot.ok ? "정상" : "확인 필요"}</LearningBadge>
+              <LearningBadge tone={snapshot.readiness.ready ? "mint" : "coral"}>
+                {snapshot.readiness.ready ? "운영 준비됨" : "점검 필요"}
+              </LearningBadge>
             </div>
             <dl className="mt-4 grid grid-cols-2 gap-2 text-xs font-black">
               <div className="rounded-[8px] border border-line bg-white px-3 py-2">
@@ -78,8 +80,28 @@ export default function AdminHealthPage() {
                   {snapshot.runtime.dataFileConfigured ? "데이터 파일 설정됨" : "기본 데이터 파일"}
                 </dd>
               </div>
+              <div className="rounded-[8px] border border-line bg-white px-3 py-2">
+                <dt className="text-muted">채점</dt>
+                <dd className="mt-1 text-ink">{snapshot.runtime.gradingProvider}</dd>
+              </div>
             </dl>
             <p className="mt-4 text-xs font-bold text-muted">확인 시각 {snapshot.checkedAt}</p>
+          </SurfaceCard>
+          <SurfaceCard tone={snapshot.readiness.ready ? "accent" : "warm"}>
+            <p className="text-xs font-black uppercase text-coral">운영 준비도</p>
+            <div className="mt-3 space-y-2">
+              {snapshot.readiness.checks.map((check) => (
+                <div className="rounded-[8px] border border-line bg-white p-3" key={check.key}>
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-black text-ink">{check.key}</p>
+                    <LearningBadge tone={check.status === "pass" ? "mint" : "coral"}>
+                      {check.status === "pass" ? "통과" : "실패"}
+                    </LearningBadge>
+                  </div>
+                  <p className="mt-2 text-xs font-bold leading-5 text-muted">{check.detail}</p>
+                </div>
+              ))}
+            </div>
           </SurfaceCard>
           <SurfaceCard>
             <p className="text-xs font-black uppercase text-coral">상태 카운트</p>

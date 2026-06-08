@@ -73,10 +73,21 @@ test("mobile learner completes production personalized grading loop", async ({ p
 })
 
 test("admin content page exposes production content operations", async ({ page }) => {
+  await page.context().clearCookies()
   await page.goto("/login")
   await page.getByLabel("이메일").fill("master@gappatch.app")
   await page.getByLabel("초대 코드").fill("MASTER-PATCH-0001")
+  const loginResponse = page.waitForResponse(
+    (response) => response.url().includes("/api/auth/beta-login") && response.status() === 200,
+  )
   await page.getByRole("button", { name: "시작하기" }).click()
+  await loginResponse
+  await expect
+    .poll(async () =>
+      (await page.context().cookies()).some((cookie) => cookie.name === "gappatch_session"),
+    )
+    .toBe(true)
+  await expect(page.getByRole("heading", { name: "과목 선택" })).toBeVisible()
 
   await page.goto("/admin/content")
 
@@ -90,6 +101,8 @@ test("admin content page exposes production content operations", async ({ page }
   await page.goto("/admin/health")
   await expect(page.getByRole("heading", { name: "서비스 상태" })).toBeVisible()
   await expect(page.getByText("gappatch-web")).toBeVisible()
+  await expect(page.getByText("운영 준비됨")).toBeVisible()
+  await expect(page.getByText("운영 준비도")).toBeVisible()
 })
 
 test("production policy pages render real copy", async ({ page }) => {
@@ -102,6 +115,42 @@ test("production policy pages render real copy", async ({ page }) => {
 
   await page.goto("/account/delete")
   await expect(page.getByRole("heading", { name: "계정 삭제" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "계정 삭제 요청" })).toBeDisabled()
+})
+
+test("learner can delete account data and revoke the session", async ({ page }, testInfo) => {
+  const account =
+    testInfo.project.name === "desktop-chromium"
+      ? {
+          email: "master@gappatch.app",
+          inviteCode: "MASTER-PATCH-0001",
+        }
+      : {
+          email: "test@gappatch.app",
+          inviteCode: "TEST-PATCH-0001",
+        }
+
+  await page.goto("/login")
+  await page.getByLabel("이메일").fill(account.email)
+  await page.getByLabel("초대 코드").fill(account.inviteCode)
+  await page.getByRole("button", { name: "시작하기" }).click()
+
+  await expect(page.getByRole("heading", { name: "과목 선택" })).toBeVisible()
+  await page.getByRole("button", { name: "과목 저장" }).click()
+  await expect(page.getByRole("heading", { name: "오늘의 문제" })).toBeVisible()
+
+  await page.goto("/account/delete")
+  await page.getByLabel("내 학습 기록 삭제에 동의합니다.").check()
+  await page.getByRole("button", { name: "계정 삭제 요청" }).click()
+  await expect(page).toHaveURL(/\/login$/)
+  await expect
+    .poll(async () =>
+      (await page.context().cookies()).some((cookie) => cookie.name === "gappatch_session"),
+    )
+    .toBe(false)
+
+  await page.goto("/today")
+  await expect(page.getByText("오늘의 문제를 불러오지 못했습니다.")).toBeVisible()
 })
 
 test("production readiness endpoints expose safe public and admin surfaces", async ({
@@ -120,6 +169,11 @@ test("production readiness endpoints expose safe public and admin surfaces", asy
     error: { code: "unauthorized" },
     ok: false,
   })
+
+  const publicHealth = await request.get("/api/health")
+  expect(publicHealth.status()).toBe(200)
+  expect(publicHealth.headers()["x-content-type-options"]).toBe("nosniff")
+  expect(publicHealth.headers()["x-frame-options"]).toBe("DENY")
 
   for (const path of ["/privacy", "/support", "/account/delete"]) {
     const response = await request.get(path)

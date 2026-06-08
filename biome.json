@@ -51,7 +51,13 @@
       }
     },
     {
-      "includes": ["*.config.ts", "*.config.mts", "**/*.config.mjs"],
+      "includes": [
+        "*.config.ts",
+        "**/*.config.ts",
+        "*.config.mts",
+        "**/*.config.mts",
+        "**/*.config.mjs"
+      ],
       "linter": {
         "rules": {
           "style": {

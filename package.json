@@ -5,10 +5,10 @@
   "scripts": {
     "dev": "pnpm --filter @gappatch/web dev",
     "build": "pnpm --filter @gappatch/web build",
-    "lint": "biome check AGENTS.md README.md docs package.json pnpm-workspace.yaml tsconfig.json tsconfig.base.json biome.json vitest.config.ts playwright.config.ts apps/web/src packages tests",
+    "lint": "biome check AGENTS.md README.md docs package.json pnpm-workspace.yaml tsconfig.json tsconfig.base.json biome.json vitest.config.ts playwright.config.ts apps/web/next.config.ts apps/web/src packages tests",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "pnpm build && playwright test"
   },
   "dependencies": {
     "@gappatch/api-contracts": "workspace:*",

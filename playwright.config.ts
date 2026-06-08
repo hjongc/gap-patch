@@ -1,11 +1,16 @@
 import { defineConfig, devices } from "@playwright/test"
 
+const e2ePort = 3100
+const e2eBaseUrl = `http://127.0.0.1:${e2ePort}`
+const e2eStateFile = `.omo/evidence/playwright-state-${process.pid}.json`
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
+  workers: 1,
   reporter: [["list"], ["html", { outputFolder: ".omo/evidence/playwright-report" }]],
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: e2eBaseUrl,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
@@ -20,10 +25,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command:
-      "GAPPATCH_MASTER_EMAIL=master@gappatch.app GAPPATCH_MASTER_INVITE_CODE=MASTER-PATCH-0001 GAPPATCH_TEST_EMAIL=test@gappatch.app GAPPATCH_TEST_INVITE_CODE=TEST-PATCH-0001 GAPPATCH_DATA_FILE=.omo/evidence/playwright-state.json pnpm --filter @gappatch/web dev --hostname 127.0.0.1 --port 3000",
-    url: "http://127.0.0.1:3000",
-    reuseExistingServer: !process.env["CI"],
+    command: `GAPPATCH_MASTER_EMAIL=master@gappatch.app GAPPATCH_MASTER_INVITE_CODE=MASTER-PATCH-0001 GAPPATCH_TEST_EMAIL=test@gappatch.app GAPPATCH_TEST_INVITE_CODE=TEST-PATCH-0001 GAPPATCH_SECURE_COOKIES=false GAPPATCH_DATA_FILE=${e2eStateFile} pnpm --filter @gappatch/web start --hostname 127.0.0.1 --port ${e2ePort}`,
+    url: e2eBaseUrl,
+    reuseExistingServer: false,
     timeout: 120000,
   },
 })

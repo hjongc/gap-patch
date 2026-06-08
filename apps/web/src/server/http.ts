@@ -20,6 +20,17 @@ export async function writeSessionId(sessionId: string): Promise<void> {
   })
 }
 
+export async function clearSessionId(): Promise<void> {
+  const cookieStore = await cookies()
+  cookieStore.set(sessionCookieName, "", {
+    httpOnly: true,
+    maxAge: 0,
+    sameSite: "lax",
+    secure: shouldUseSecureSessionCookies(),
+    path: "/",
+  })
+}
+
 export function shouldUseSecureSessionCookies(): boolean {
   const { GAPPATCH_SECURE_COOKIES, NODE_ENV } = process.env
   if (GAPPATCH_SECURE_COOKIES === "false") {

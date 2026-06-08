@@ -1,5 +1,6 @@
 import { productIdentity } from "@gappatch/product"
-import { LearningBadge, MascotMark, MobileShell, SurfaceCard } from "./ui"
+import { GapPatchLogo } from "./brand"
+import { MobileShell, SurfaceCard } from "./ui"
 
 export default function HomePage() {
   return (
@@ -7,8 +8,7 @@ export default function HomePage() {
       <section className="motion-rise flex flex-1 flex-col justify-between gap-8 py-6">
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <LearningBadge tone="banana">{productIdentity.englishName}</LearningBadge>
-            <MascotMark />
+            <GapPatchLogo className="h-16 w-auto" />
           </div>
           <div>
             <h1 className="text-5xl font-black leading-none">{productIdentity.koreanName}</h1>

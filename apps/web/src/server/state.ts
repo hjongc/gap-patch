@@ -36,9 +36,9 @@ type PersistedAppState = {
   readonly users: readonly PersistedUser[]
   readonly sessions: readonly Session[]
   readonly assignments: readonly Assignment[]
-  readonly history: readonly (readonly [string, readonly HistoryItem[]])[]
-  readonly review: readonly (readonly [string, readonly ReviewItem[]])[]
+  readonly history?: readonly (readonly [string, readonly HistoryItem[]])[] | undefined
   readonly mastery?: readonly UserConceptMastery[]
+  readonly review?: readonly (readonly [string, readonly ReviewItem[]])[] | undefined
 }
 
 export async function getAppState(): Promise<AppState> {
@@ -106,10 +106,10 @@ export function hydrateAppState(persisted: PersistedAppState): AppState {
     const normalized = normalizeAssignment(assignment)
     state.assignmentsByKey.set(`${normalized.userId}:${normalized.localDate}`, normalized)
   }
-  for (const [userId, history] of persisted.history) {
+  for (const [userId, history] of persisted.history ?? []) {
     state.historyByUserId.set(userId, history.map(normalizeHistoryItem))
   }
-  for (const [userId, review] of persisted.review) {
+  for (const [userId, review] of persisted.review ?? []) {
     state.reviewByUserId.set(userId, review.map(normalizeReviewItem))
   }
   for (const mastery of persisted.mastery ?? []) {

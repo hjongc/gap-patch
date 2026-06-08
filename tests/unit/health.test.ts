@@ -40,7 +40,23 @@ describe("health snapshot", () => {
       ok: true,
       runtime: {
         dataFileConfigured: true,
+        gradingProvider: "deterministic",
         nodeEnv: "production",
+      },
+      readiness: {
+        checks: [
+          {
+            detail: "GAPPATCH_DATA_FILE is configured.",
+            key: "data_file",
+            status: "pass",
+          },
+          {
+            detail: "Deterministic grading is active.",
+            key: "grading_provider",
+            status: "pass",
+          },
+        ],
+        ready: true,
       },
       service: "gappatch-web",
       state: {
@@ -64,5 +80,29 @@ describe("health snapshot", () => {
       service: "gappatch-web",
     })
     expect("state" in snapshot).toBe(false)
+  })
+
+  it("marks production readiness as failed when durable state is not configured", () => {
+    vi.stubEnv("NODE_ENV", "production")
+    vi.stubEnv("GAPPATCH_DATA_FILE", "")
+    const state = createAppState()
+
+    const snapshot = getHealthSnapshot(state, new Date("2026-06-05T00:00:00.000Z"))
+
+    expect(snapshot.readiness).toEqual({
+      checks: [
+        {
+          detail: "Set GAPPATCH_DATA_FILE before running production traffic.",
+          key: "data_file",
+          status: "fail",
+        },
+        {
+          detail: "Deterministic grading is active.",
+          key: "grading_provider",
+          status: "pass",
+        },
+      ],
+      ready: false,
+    })
   })
 })

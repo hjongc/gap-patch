@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto"
 import { subjectIds } from "@gappatch/domain"
 import type {
   AdminContentCoverageResult,
@@ -31,6 +32,12 @@ import { submitAnswerSync } from "./submission-service"
 
 const sessionTtlMs = 1000 * 60 * 60 * 24 * 30
 
+export { deleteAccount } from "./account-deletion"
+
+function createUserId(): string {
+  return `user_${randomBytes(16).toString("base64url")}`
+}
+
 export function createAppState(): AppState {
   return {
     invites: seedInvites(),
@@ -53,14 +60,14 @@ export function loginWithInvite(state: AppState, input: LoginInput): LoginResult
   const user =
     existing ??
     ({
-      id: `user-${state.usersByEmail.size + 1}`,
+      id: createUserId(),
       email: input.email,
       role: invite.role,
       timezone: input.timezone,
       selectedSubjects: subjectIds,
       difficulty: "foundation",
     } satisfies User)
-  const currentUser = existing ? { ...user, timezone: input.timezone } : user
+  const currentUser = existing ? { ...user, role: invite.role, timezone: input.timezone } : user
 
   state.usersByEmail.set(input.email, currentUser)
 

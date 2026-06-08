@@ -13,7 +13,23 @@ const kyMocks = vi.hoisted(() => ({
         ok: true,
         runtime: {
           dataFileConfigured: true,
+          gradingProvider: "deterministic",
           nodeEnv: "production",
+        },
+        readiness: {
+          checks: [
+            {
+              detail: "GAPPATCH_DATA_FILE is configured.",
+              key: "data_file",
+              status: "pass",
+            },
+            {
+              detail: "Deterministic grading is active.",
+              key: "grading_provider",
+              status: "pass",
+            },
+          ],
+          ready: true,
         },
         service: "gappatch-web",
         state: {
@@ -47,6 +63,8 @@ describe("AdminHealthPage", () => {
     expect(await screen.findByText("서비스 상태")).toBeVisible()
     expect(screen.getByText("gappatch-web")).toBeVisible()
     expect(screen.getByText("production")).toBeVisible()
+    expect(screen.getByText("운영 준비됨")).toBeVisible()
+    expect(screen.getByText("Deterministic grading is active.")).toBeVisible()
     expect(screen.getByText("데이터 파일 설정됨")).toBeVisible()
     expect(screen.getByText("사용자")).toBeVisible()
     expect(screen.getByText("배정")).toBeVisible()
